@@ -35,6 +35,16 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+#define M1_duty_offset 31
+#define M2_duty_offset 31
+#define M3_duty_offset 32
+#define M4_duty_offset 31
+
+#define M1_duty_max 1009.0
+#define M2_duty_max 1005.0
+#define M3_duty_max 1043.0
+#define M4_duty_max 1015.0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,7 +56,13 @@
 
 /* USER CODE BEGIN PV */
 
-uint32_t duty[4] = { 0, 0, 0, 0 };
+uint16_t duty[4] = { 0 };
+uint16_t last_duty[4] = { 0 };
+
+int32_t counter[4] = { 0 };
+float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
+
+uint64_t main_counter = 0;
 
 /* USER CODE END PV */
 
@@ -62,39 +78,38 @@ void SystemClock_Config(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+	/* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_TIM1_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_TIM4_Init();
-  MX_SPI1_Init();
-  /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_TIM1_Init();
+	MX_TIM2_Init();
+	MX_TIM3_Init();
+	MX_TIM4_Init();
+	MX_SPI1_Init();
+	/* USER CODE BEGIN 2 */
 
 	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_2);
@@ -105,60 +120,60 @@ int main(void)
 	HAL_TIM_IC_Start_IT(&htim4, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start(&htim4, TIM_CHANNEL_2);
 
-  /* USER CODE END 2 */
+	/* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
 	while (1) {
-    /* USER CODE END WHILE */
+		main_counter++;
 
-    /* USER CODE BEGIN 3 */
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
 	}
-  /* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	/** Initializes the RCC Oscillators according to the specified parameters
+	 * in the RCC_OscInitTypeDef structure.
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	/** Initializes the CPU, AHB and APB buses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+		Error_Handler();
+	}
 }
 
 /* USER CODE BEGIN 4 */
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
+	static uint8_t first_run = 0;
+
 	if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
 		// Read the IC value
 		uint32_t ICValue = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
@@ -169,13 +184,59 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			// Frequency = 72000000 / ICValue;
 
 			if (htim->Instance == TIM1) {
-				duty[0] = Duty;
+				duty[0] = Duty - M1_duty_offset;
+				int32_t delta = duty[0] - last_duty[0];
+				if (delta > 500) {
+					counter[0] += delta - M1_duty_max;
+				} else if (delta < -500) {
+					counter[0] += delta + M1_duty_max;
+				} else {
+					counter[0] += delta;
+				}
+				last_duty[0] = duty[0];
 			} else if (htim->Instance == TIM2) {
-				duty[1] = Duty;
+				duty[1] = Duty - M2_duty_offset;
+				int32_t delta = duty[1] - last_duty[1];
+				if (delta > 500) {
+					counter[1] += delta - M2_duty_max;
+				} else if (delta < -500) {
+					counter[1] += delta + M2_duty_max;
+				} else {
+					counter[1] += delta;
+				}
+				last_duty[1] = duty[1];
 			} else if (htim->Instance == TIM3) {
-				duty[2] = Duty;
+				duty[2] = Duty - M3_duty_offset;
+				int32_t delta = duty[2] - last_duty[2];
+				if (delta > 500) {
+					counter[2] += delta - M3_duty_max;
+				} else if (delta < -500) {
+					counter[2] += delta + M3_duty_max;
+				} else {
+					counter[2] += delta;
+				}
+				last_duty[2] = duty[2];
 			} else if (htim->Instance == TIM4) {
-				duty[3] = Duty;
+				duty[3] = Duty - M4_duty_offset;
+				int32_t delta = duty[3] - last_duty[3];
+				if (delta > 500) {
+					counter[3] += delta - M4_duty_max;
+				} else if (delta < -500) {
+					counter[3] += delta + M4_duty_max;
+				} else {
+					counter[3] += delta;
+				}
+				last_duty[3] = duty[3];
+			}
+
+			if (first_run == 126) {
+				first_run = 127;
+				counter[0] = 0;
+				counter[1] = 0;
+				counter[2] = 0;
+				counter[3] = 0;
+			} else if (first_run != 127) {
+				first_run++;
 			}
 		}
 	}
@@ -184,17 +245,16 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
+	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1) {
 	}
-  /* USER CODE END Error_Handler_Debug */
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

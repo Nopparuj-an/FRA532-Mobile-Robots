@@ -77,6 +77,7 @@ void SystemClock_Config(void);
 
 uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float percent_duty);
 uint64_t micros();
+void setMotor(uint8_t ID, float dutyCycle);
 
 /* USER CODE END PFP */
 
@@ -213,42 +214,92 @@ uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float p
 	return 0;
 }
 
+void setMotor(uint8_t ID, float dutyCycle) {
+	switch (ID) {
+	case 1:
+		if (dutyCycle < 0) {
+			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, dutyCycle);
+		} else {
+			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 0.0);
+		}
+		break;
+	case 2:
+		if (dutyCycle < 0) {
+			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, dutyCycle);
+		} else {
+			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, 0.0);
+		}
+		break;
+	case 3:
+		if (dutyCycle < 0) {
+			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, 0.0);
+		} else {
+			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, dutyCycle);
+		}
+		break;
+	case 4:
+		if (dutyCycle < 0) {
+			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, dutyCycle);
+		} else {
+			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, 0.0);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == GPIO_PIN_13) {
 		static uint32_t last_time = 0;
 		uint32_t time = HAL_GetTick();
-		if (time - last_time < 100)
+		if (time - last_time < 200)
 			return;
 		last_time = time;
 
 		switch (user_input) {
 		default:
 		case 0:
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 30.0);
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 30.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 30.0);
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 30.0);
+			setMotor(1, 25.0);
+			setMotor(2, 25.0);
+			setMotor(3, 25.0);
+			setMotor(4, 25.0);
 			user_input = 1;
 			break;
 		case 1:
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 50.0);
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 50.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 50.0);
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 50.0);
+			setMotor(1, 100.0);
+			setMotor(2, 100.0);
+			setMotor(3, 100.0);
+			setMotor(4, 100.0);
 			user_input = 2;
 			break;
 		case 2:
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 100.0);
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 100.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 100.0);
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 100.0);
+			setMotor(1, -25.0);
+			setMotor(2, -25.0);
+			setMotor(3, -25.0);
+			setMotor(4, -25.0);
 			user_input = 3;
 			break;
 		case 3:
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 0.0);
+			setMotor(1, -100.0);
+			setMotor(2, -100.0);
+			setMotor(3, -100.0);
+			setMotor(4, -100.0);
+			user_input = 4;
+			break;
+		case 4:
+			setMotor(1, 0.0);
+			setMotor(2, 0.0);
+			setMotor(3, 0.0);
+			setMotor(4, 0.0);
 			user_input = 0;
 			break;
 		}
