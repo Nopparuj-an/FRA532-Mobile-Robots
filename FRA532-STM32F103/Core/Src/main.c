@@ -62,7 +62,12 @@ uint16_t last_duty[4] = { 0 };
 int32_t counter[4] = { 0 };
 float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
 
-uint64_t main_counter = 0;
+uint8_t SPI_rx[12];
+uint8_t SPI_tx[12];
+
+static uint32_t count;
+HAL_StatusTypeDef status1;
+HAL_StatusTypeDef status2;
 
 /* USER CODE END PV */
 
@@ -125,7 +130,12 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		main_counter++;
+		status1 = HAL_SPI_Receive(&hspi1, SPI_rx, 1, 10);
+		if (status1 == HAL_OK) {
+			count++;
+			SPI_tx[0] = (uint8_t) count;
+			status2 = HAL_SPI_Transmit(&hspi1, SPI_tx, 1, 20);
+		}
 
 		/* USER CODE END WHILE */
 
@@ -187,11 +197,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[0] = Duty - M1_duty_offset;
 				int32_t delta = duty[0] - last_duty[0];
 				if (delta > 500) {
-					counter[0] += delta - M1_duty_max;
+					counter[0] -= delta - M1_duty_max;
 				} else if (delta < -500) {
-					counter[0] += delta + M1_duty_max;
+					counter[0] -= delta + M1_duty_max;
 				} else {
-					counter[0] += delta;
+					counter[0] -= delta;
 				}
 				last_duty[0] = duty[0];
 			} else if (htim->Instance == TIM2) {
@@ -209,11 +219,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[2] = Duty - M3_duty_offset;
 				int32_t delta = duty[2] - last_duty[2];
 				if (delta > 500) {
-					counter[2] += delta - M3_duty_max;
+					counter[2] -= delta - M3_duty_max;
 				} else if (delta < -500) {
-					counter[2] += delta + M3_duty_max;
+					counter[2] -= delta + M3_duty_max;
 				} else {
-					counter[2] += delta;
+					counter[2] -= delta;
 				}
 				last_duty[2] = duty[2];
 			} else if (htim->Instance == TIM4) {

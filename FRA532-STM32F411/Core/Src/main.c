@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -54,20 +55,11 @@
 int8_t user_input = 0;
 uint32_t ms_count = 0;
 
-uint16_t T1C1_ValueStart = 0;
-uint16_t T1C1_ValueEnd = 0;
-float T1C1_dutyCycle = 0;
-uint16_t T1C2_ValueStart = 0;
-uint16_t T1C2_ValueEnd = 0;
-float T1C2_dutyCycle = 0;
-uint16_t T1C3_ValueStart = 0;
-uint16_t T1C3_ValueEnd = 0;
-float T1C3_dutyCycle = 0;
-uint16_t T1C4_ValueStart = 0;
-uint16_t T1C4_ValueEnd = 0;
-float T1C4_dutyCycle = 0;
+uint8_t SPI_rx[12];
+uint8_t SPI_tx[12];
 
-uint32_t dt_micros = 0;
+HAL_StatusTypeDef status1;
+HAL_StatusTypeDef status2;
 
 /* USER CODE END PV */
 
@@ -116,8 +108,8 @@ int main(void) {
 	MX_USART2_UART_Init();
 	MX_TIM3_Init();
 	MX_TIM4_Init();
-	MX_TIM1_Init();
 	MX_TIM9_Init();
+	MX_SPI1_Init();
 	/* USER CODE BEGIN 2 */
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -128,18 +120,19 @@ int main(void) {
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
 
-	HAL_TIM_Base_Start_IT(&htim1);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_3);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_4);
+	HAL_TIM_Base_Start_IT(&htim9);
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		dt_micros = micros();
+		SPI_tx[0] = 0b10100101;
+		HAL_SPI_Init(&hspi1);
+		status1 = HAL_SPI_Transmit(&hspi1, SPI_tx, 1, 10);
+		status2 = HAL_SPI_Receive(&hspi1, SPI_rx, 1, 10);
+		HAL_SPI_DeInit(&hspi1);
+//		HAL_Delay(100);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -301,66 +294,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			setMotor(3, 0.0);
 			setMotor(4, 0.0);
 			user_input = 0;
-			break;
-		}
-	}
-}
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-	if (htim->Instance == TIM1) {
-		switch (htim->Channel) {
-		case HAL_TIM_ACTIVE_CHANNEL_1:
-			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8)) {
-				// Falling edge
-				T1C1_ValueEnd = htim->Instance->CCR1;
-			} else {
-				// Rising edge
-				T1C1_ValueStart = htim->Instance->CCR1;
-			}
-
-			// Calculate duty cycle
-			uint16_t period = T1C1_ValueEnd - T1C1_ValueStart;
-			if (period <= 2000) {
-				T1C1_dutyCycle = period;
-			}
-			break;
-		case HAL_TIM_ACTIVE_CHANNEL_2:
-			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9)) {
-				T1C2_ValueEnd = htim->Instance->CCR2;
-			} else {
-				T1C2_ValueStart = htim->Instance->CCR2;
-			}
-
-			period = T1C2_ValueEnd - T1C2_ValueStart;
-			if (period <= 2000) {
-				T1C2_dutyCycle = period;
-			}
-			break;
-		case HAL_TIM_ACTIVE_CHANNEL_3:
-			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_10)) {
-				T1C3_ValueEnd = htim->Instance->CCR3;
-			} else {
-				T1C3_ValueStart = htim->Instance->CCR3;
-			}
-
-			period = T1C3_ValueEnd - T1C3_ValueStart;
-			if (period <= 2000) {
-				T1C3_dutyCycle = period;
-			}
-			break;
-		case HAL_TIM_ACTIVE_CHANNEL_4:
-			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11)) {
-				T1C4_ValueEnd = htim->Instance->CCR4;
-			} else {
-				T1C4_ValueStart = htim->Instance->CCR4;
-			}
-
-			period = T1C4_ValueEnd - T1C4_ValueStart;
-			if (period <= 2000) {
-				T1C4_dutyCycle = period;
-			}
-			break;
-		default:
 			break;
 		}
 	}
