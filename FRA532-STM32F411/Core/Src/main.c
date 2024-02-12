@@ -129,10 +129,12 @@ int main(void) {
 	while (1) {
 		SPI_tx[0] = 0b10100101;
 		HAL_SPI_Init(&hspi1);
-		status1 = HAL_SPI_Transmit(&hspi1, SPI_tx, 1, 10);
-		status2 = HAL_SPI_Receive(&hspi1, SPI_rx, 1, 10);
+		status1 = HAL_SPI_Transmit(&hspi1, (uint8_t*) &SPI_tx, 1, 10);
+		HAL_Delay(1);
+		status2 = HAL_SPI_Receive(&hspi1, (uint8_t*) &SPI_rx, 12, 100);
+//		status1 = HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) &SPI_tx, (uint8_t*) &SPI_rx, 13, 10);
 		HAL_SPI_DeInit(&hspi1);
-//		HAL_Delay(100);
+		HAL_Delay(10);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
