@@ -29,7 +29,6 @@
 
 #include "math.h"
 #include "arm_math.h"
-#include "WS2812B.h"
 
 /* USER CODE END Includes */
 
@@ -173,13 +172,6 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		Set_LED(0, 255, 0, 0);
-		Set_LED(1, 255, 255, 255);
-		Set_LED(2, 0, 0, 255);
-		Set_LED(3, 255, 255, 255);
-		Set_LED(4, 255, 0, 0);
-		Set_Brightness(5);
-		WS2812_Send();
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
