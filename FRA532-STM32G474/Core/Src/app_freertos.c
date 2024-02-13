@@ -42,24 +42,13 @@
 #include <rmw_microros/rmw_microros.h>
 
 #include <std_msgs/msg/int32.h>
+#include <geometry_msgs/msg/twist.h>
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 typedef StaticTask_t osStaticThreadDef_t;
 /* USER CODE BEGIN PTD */
-
-bool cubemx_transport_open(struct uxrCustomTransport * transport);
-bool cubemx_transport_close(struct uxrCustomTransport * transport);
-size_t cubemx_transport_write(struct uxrCustomTransport* transport, const uint8_t * buf, size_t len, uint8_t * err);
-size_t cubemx_transport_read(struct uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* err);
-
-void * microros_allocate(size_t size, void * state);
-void microros_deallocate(void * pointer, void * state);
-void * microros_reallocate(void * pointer, size_t size, void * state);
-void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element, void * state);
-
-void RGB_Rainbow(uint8_t dobreathing);
 
 /* USER CODE END PTD */
 
@@ -94,6 +83,18 @@ const osThreadAttr_t defaultTask_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+
+bool cubemx_transport_open(struct uxrCustomTransport * transport);
+bool cubemx_transport_close(struct uxrCustomTransport * transport);
+size_t cubemx_transport_write(struct uxrCustomTransport* transport, const uint8_t * buf, size_t len, uint8_t * err);
+size_t cubemx_transport_read(struct uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* err);
+
+void * microros_allocate(size_t size, void * state);
+void microros_deallocate(void * pointer, void * state);
+void * microros_reallocate(void * pointer, size_t size, void * state);
+void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element, void * state);
+
+void RGB_Rainbow(uint8_t dobreathing);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -153,12 +154,10 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN StartDefaultTask */
 	/* Infinite loop */
 
-	rmw_uros_set_custom_transport(true, (void*) &hlpuart1, cubemx_transport_open,
-			cubemx_transport_close, cubemx_transport_write,
-			cubemx_transport_read);
+	rmw_uros_set_custom_transport(true, (void*) &hlpuart1, cubemx_transport_open, cubemx_transport_close,
+			cubemx_transport_write, cubemx_transport_read);
 
-	rcl_allocator_t freeRTOS_allocator =
-			rcutils_get_zero_initialized_allocator();
+	rcl_allocator_t freeRTOS_allocator = rcutils_get_zero_initialized_allocator();
 	freeRTOS_allocator.allocate = microros_allocate;
 	freeRTOS_allocator.deallocate = microros_deallocate;
 	freeRTOS_allocator.reallocate = microros_reallocate;
@@ -168,26 +167,28 @@ void StartDefaultTask(void *argument)
 		printf("Error on default allocators (line %d)\n", __LINE__);
 	}
 
-	// micro-ROS app
-
-	rcl_publisher_t publisher;
-	std_msgs__msg__Int32 msg;
+	//create init_options
 	rclc_support_t support;
 	rcl_allocator_t allocator;
-	rcl_node_t node;
-
 	allocator = rcl_get_default_allocator();
-
-	//create init_options
 	rclc_support_init(&support, 0, NULL, &allocator);
 
 	// create node
-	rclc_node_init_default(&node, "cubemx_node", "", &support);
+	rcl_node_t node;
+	rclc_node_init_default(&node, "STM32_node", "", &support);
 
-	// create publisher
-	rclc_publisher_init_default(&publisher, &node,
-			ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-			"cubemx_publisher");
+	// create messages
+	std_msgs__msg__Int32 msg;
+	geometry_msgs__msg__Twist twist_msg;
+
+	// create publisher/subscriber
+	rcl_publisher_t publisher;
+	rclc_publisher_init_default(&publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "STM32_status");
+	rcl_subscription_t subscriber;
+	rclc_subscription_init_default(&subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), "cmd_vel");
+
+	// sync time
+	rmw_uros_sync_session(1000);
 
 	msg.data = 0;
 

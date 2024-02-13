@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "dma.h"
+#include "usart.h"
 #include "tim.h"
 #include "gpio.h"
 
@@ -230,7 +231,8 @@ void SystemClock_Config(void)
 void oneKilohertz() {
 	// calculate the speed of the motors
 	for (int i = 0; i < 4; i++) {
-		motor_speed[i] = (float) (counter[i] - last_counter[i]) * compensation[i];
+		float raw_speed = ((float) (counter[i] - last_counter[i]) * compensation[i]) * 6.283185307;
+		motor_speed[i] = 0.2 * raw_speed + 0.8 * motor_speed[i];
 	}
 
 	// save last counter values
@@ -282,20 +284,20 @@ void setMotor(uint8_t ID, float dutyCycle) {
 		break;
 	case 3:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, dutyCycle);
-		} else {
 			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, dutyCycle);
 			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, 0.0);
+		} else {
+			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, dutyCycle);
 		}
 		break;
 	case 4:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, 0.0);
-		} else {
 			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 0.0);
 			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, dutyCycle);
+		} else {
+			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, 0.0);
 		}
 		break;
 	default:
@@ -316,29 +318,29 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		case 0:
 			setMotor(1, 25.0);
 			setMotor(2, 25.0);
-			setMotor(3, -25.0);
-			setMotor(4, -25.0);
+			setMotor(3, 25.0);
+			setMotor(4, 25.0);
 			user_input = 1;
 			break;
 		case 1:
 			setMotor(1, 100.0);
 			setMotor(2, 100.0);
-			setMotor(3, -100.0);
-			setMotor(4, -100.0);
+			setMotor(3, 100.0);
+			setMotor(4, 100.0);
 			user_input = 2;
 			break;
 		case 2:
 			setMotor(1, -25.0);
 			setMotor(2, -25.0);
-			setMotor(3, 25.0);
-			setMotor(4, 25.0);
+			setMotor(3, -25.0);
+			setMotor(4, -25.0);
 			user_input = 3;
 			break;
 		case 3:
 			setMotor(1, -100.0);
 			setMotor(2, -100.0);
-			setMotor(3, 100.0);
-			setMotor(4, 100.0);
+			setMotor(3, -100.0);
+			setMotor(4, -100.0);
 			user_input = 4;
 			break;
 		case 4:
@@ -372,22 +374,22 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[0] = Duty - M1_duty_offset;
 				int32_t delta = duty[0] - last_duty[0];
 				if (delta > 500) {
-					counter[0] += delta - M1_duty_max;
+					counter[0] -= delta - M1_duty_max;
 				} else if (delta < -500) {
-					counter[0] += delta + M1_duty_max;
+					counter[0] -= delta + M1_duty_max;
 				} else {
-					counter[0] += delta;
+					counter[0] -= delta;
 				}
 				last_duty[0] = duty[0];
 			} else if (htim->Instance == TIM8) {
 				duty[1] = Duty - M2_duty_offset;
 				int32_t delta = duty[1] - last_duty[1];
 				if (delta > 500) {
-					counter[1] -= delta - M2_duty_max;
+					counter[1] += delta - M2_duty_max;
 				} else if (delta < -500) {
-					counter[1] -= delta + M2_duty_max;
+					counter[1] += delta + M2_duty_max;
 				} else {
-					counter[1] -= delta;
+					counter[1] += delta;
 				}
 				last_duty[1] = duty[1];
 			} else if (htim->Instance == TIM15) {
@@ -405,11 +407,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[3] = Duty - M4_duty_offset;
 				int32_t delta = duty[3] - last_duty[3];
 				if (delta > 500) {
-					counter[3] -= delta - M4_duty_max;
+					counter[3] += delta - M4_duty_max;
 				} else if (delta < -500) {
-					counter[3] -= delta + M4_duty_max;
+					counter[3] += delta + M4_duty_max;
 				} else {
-					counter[3] -= delta;
+					counter[3] += delta;
 				}
 				last_duty[3] = duty[3];
 			}
