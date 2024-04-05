@@ -27,6 +27,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "math.h"
+#include "stdio.h"
+#include "kalman.h"
 #include "arm_math.h"
 #include "WS2812B.h"
 
@@ -62,7 +64,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+float32_t vel1;
+float32_t volt = 12;
 int8_t user_input = 0;
 uint32_t ms_count = 0;
 
@@ -75,6 +78,8 @@ int32_t last_counter[4] = { 0 };
 float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
 
 float motor_speed[4] = { 0.0 };
+
+KalmanFilter filterA;
 
 /* USER CODE END PV */
 
@@ -100,7 +105,6 @@ void oneKilohertz();
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -133,6 +137,8 @@ int main(void) {
 	MX_TIM1_Init();
 	/* USER CODE BEGIN 2 */
 
+	Kalman_Start(&filterA);
+
 	// Start PWM outputs
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -161,6 +167,7 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+		vel1 = SteadyStateKalmanFilter(&filterA, volt, 0.0);
 		Set_LED(0, 255, 0, 0);
 		Set_LED(1, 255, 255, 255);
 		Set_LED(2, 0, 0, 255);
@@ -256,38 +263,38 @@ void setMotor(uint8_t ID, float dutyCycle) {
 	switch (ID) {
 	case 1:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_3, 2000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_4, 2000, dutyCycle);
 		} else {
-			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_3, 2000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_4, 2000, 0.0);
 		}
 		break;
 	case 2:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_3, 2000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_4, 2000, dutyCycle);
 		} else {
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, dutyCycle);
-			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_3, 2000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_4, 2000, 0.0);
 		}
 		break;
 	case 3:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_1, 2000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_2, 2000, dutyCycle);
 		} else {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_1, 2000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_2, 2000, 0.0);
 		}
 		break;
 	case 4:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_1, 2000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_2, 2000, 0.0);
 		} else {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_1, 2000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_2, 2000, dutyCycle);
 		}
 		break;
 	default:
@@ -371,22 +378,22 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[0] = Duty - M1_duty_offset;
 				int32_t delta = duty[0] - last_duty[0];
 				if (delta > 500) {
-					counter[0] += delta - M1_duty_max;
+					counter[0] -= delta - M1_duty_max;
 				} else if (delta < -500) {
-					counter[0] += delta + M1_duty_max;
+					counter[0] -= delta + M1_duty_max;
 				} else {
-					counter[0] += delta;
+					counter[0] -= delta;
 				}
 				last_duty[0] = duty[0];
 			} else if (htim->Instance == TIM8) {
 				duty[1] = Duty - M2_duty_offset;
 				int32_t delta = duty[1] - last_duty[1];
 				if (delta > 500) {
-					counter[1] -= delta - M2_duty_max;
+					counter[1] += delta - M2_duty_max;
 				} else if (delta < -500) {
-					counter[1] -= delta + M2_duty_max;
+					counter[1] += delta + M2_duty_max;
 				} else {
-					counter[1] -= delta;
+					counter[1] += delta;
 				}
 				last_duty[1] = duty[1];
 			} else if (htim->Instance == TIM15) {
@@ -404,11 +411,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[3] = Duty - M4_duty_offset;
 				int32_t delta = duty[3] - last_duty[3];
 				if (delta > 500) {
-					counter[3] -= delta - M4_duty_max;
+					counter[3] += delta - M4_duty_max;
 				} else if (delta < -500) {
-					counter[3] -= delta + M4_duty_max;
+					counter[3] += delta + M4_duty_max;
 				} else {
-					counter[3] -= delta;
+					counter[3] += delta;
 				}
 				last_duty[3] = duty[3];
 			}
@@ -423,6 +430,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 		}
 	}
 }
+
 
 /* USER CODE END 4 */
 
