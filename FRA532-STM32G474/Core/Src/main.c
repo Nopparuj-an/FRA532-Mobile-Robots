@@ -52,6 +52,12 @@
 #define M3_duty_max 1048.0
 #define M4_duty_max 1019.0
 
+uint8_t RxBuffer[5];
+uint8_t TxBuffer[7];
+
+int32_t PWM;
+uint16_t Freq;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -70,11 +76,8 @@ uint16_t duty[4] = { 0 };
 uint16_t last_duty[4] = { 0 };
 
 int32_t counter[4] = { 0 };
-int32_t last_counter[4] = { 0 };
 
 float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
-
-float motor_speed[4] = { 0.0 };
 
 uint32_t LEDtime = 0;
 
@@ -86,8 +89,8 @@ void SystemClock_Config(void);
 
 uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float percent_duty);
 uint64_t micros();
-void setMotor(uint8_t ID, float dutyCycle);
-void oneKilohertz();
+void setMotor(uint8_t ID, float dutyCycle, uint16_t freq);
+void RGB_Rainbow(uint8_t dobreathing);
 
 /* USER CODE END PFP */
 
@@ -97,43 +100,44 @@ void oneKilohertz();
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void) {
-	/* USER CODE BEGIN 1 */
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
 
-	/* USER CODE END 1 */
+  /* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
+  /* MCU Configuration--------------------------------------------------------*/
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-	/* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 
-	/* USER CODE END Init */
+  /* USER CODE END Init */
 
-	/* Configure the system clock */
-	SystemClock_Config();
+  /* Configure the system clock */
+  SystemClock_Config();
 
-	/* USER CODE BEGIN SysInit */
+  /* USER CODE BEGIN SysInit */
 
-	/* USER CODE END SysInit */
+  /* USER CODE END SysInit */
 
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_LPUART1_UART_Init();
-	MX_TIM3_Init();
-	MX_TIM4_Init();
-	MX_TIM6_Init();
-	MX_TIM15_Init();
-	MX_TIM20_Init();
-	MX_TIM8_Init();
-	MX_TIM16_Init();
-	MX_TIM1_Init();
-	/* USER CODE BEGIN 2 */
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_LPUART1_UART_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
+  MX_TIM6_Init();
+  MX_TIM15_Init();
+  MX_TIM20_Init();
+  MX_TIM8_Init();
+  MX_TIM16_Init();
+  MX_TIM1_Init();
+  /* USER CODE BEGIN 2 */
 
 	// Start PWM outputs
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -158,78 +162,107 @@ int main(void) {
 	// Start timer for other functions
 	HAL_TIM_Base_Start_IT(&htim6);  // microsecond timer
 
-	/* USER CODE END 2 */
+	// Start UART DMA
+	HAL_UART_Receive_DMA(&hlpuart1, RxBuffer, 3);
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+	uint32_t timestamp = HAL_GetTick() + 5;
 	while (1) {
-//		Set_LED(0, 255, 0, 0);
-//		Set_LED(1, 255, 255, 255);
-//		Set_LED(2, 0, 0, 255);
-//		Set_LED(3, 255, 255, 255);
-//		Set_LED(4, 255, 0, 0);
 		RGB_Rainbow(0);
 		Set_Brightness(45);
 		WS2812_Send();
-		/* USER CODE END WHILE */
 
-		/* USER CODE BEGIN 3 */
+		if (HAL_GetTick() >= timestamp) {
+			timestamp += 5;
+
+			uint16_t rawAngle = counter[0] * compensation[0];
+
+			TxBuffer[0] = 69; // header
+			TxBuffer[1] = rawAngle & 0xff;
+			TxBuffer[2] = (rawAngle & 0xff00) >> 8;
+
+			uint16_t Current = 0;
+
+			TxBuffer[3] = Current & 0xff;
+			TxBuffer[4] = (Current & 0xff00) >> 8;
+			TxBuffer[5] = 10; // /n
+
+			HAL_UART_Transmit_DMA(&hlpuart1, TxBuffer, 6);
+
+			setMotor(1, PWM, Freq);
+		}
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 	}
-	/* USER CODE END 3 */
+  /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void) {
-	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-	/** Configure the main internal regulator output voltage
-	 */
-	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+  /** Configure the main internal regulator output voltage
+  */
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
-	/** Initializes the RCC Oscillators according to the specified parameters
-	 * in the RCC_OscInitTypeDef structure.
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
-	RCC_OscInitStruct.PLL.PLLN = 85;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
-	}
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
+  RCC_OscInitStruct.PLL.PLLN = 85;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-	/** Initializes the CPU, AHB and APB buses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
-		Error_Handler();
-	}
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
 
-void oneKilohertz() {
-	// calculate the speed of the motors
-	for (int i = 0; i < 4; i++) {
-		motor_speed[i] = (float) (counter[i] - last_counter[i]) * compensation[i];
-	}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart == &hlpuart1) {
+		if (RxBuffer[0] == 70) { // PWM
+			if (RxBuffer[2] == 1)
+				PWM = RxBuffer[1];
 
-	// save last counter values
-	memcpy(last_counter, counter, sizeof(last_counter));
+			else if (RxBuffer[2] == 2) {
+				PWM = -RxBuffer[1];
+			}
+		}
+		if (RxBuffer[0] == 69) { // Frequency
+			Freq = (RxBuffer[1] << 8) | RxBuffer[2];
+		}
+	}
 }
 
 /**
@@ -255,42 +288,42 @@ uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float p
 	return 0;
 }
 
-void setMotor(uint8_t ID, float dutyCycle) {
+void setMotor(uint8_t ID, float dutyCycle, uint16_t freq) {
 	switch (ID) {
 	case 1:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_3, freq, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_4, freq, dutyCycle);
 		} else {
-			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_3, freq, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_4, freq, 0.0);
 		}
 		break;
 	case 2:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_3, freq, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_4, freq, dutyCycle);
 		} else {
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, dutyCycle);
-			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_3, freq, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_4, freq, 0.0);
 		}
 		break;
 	case 3:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_1, freq, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_2, freq, dutyCycle);
 		} else {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_1, freq, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_2, freq, 0.0);
 		}
 		break;
 	case 4:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_1, freq, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_2, freq, 0.0);
 		} else {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_1, freq, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_2, freq, dutyCycle);
 		}
 		break;
 	default:
@@ -309,38 +342,38 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		switch (user_input) {
 		default:
 		case 0:
-			setMotor(1, 25.0);
-			setMotor(2, 25.0);
-			setMotor(3, -25.0);
-			setMotor(4, -25.0);
+			setMotor(1, 25.0, 20000);
+			setMotor(2, 25.0, 20000);
+			setMotor(3, -25.0, 20000);
+			setMotor(4, -25.0, 20000);
 			user_input = 1;
 			break;
 		case 1:
-			setMotor(1, 100.0);
-			setMotor(2, 100.0);
-			setMotor(3, -100.0);
-			setMotor(4, -100.0);
+			setMotor(1, 100.0, 20000);
+			setMotor(2, 100.0, 20000);
+			setMotor(3, -100.0, 20000);
+			setMotor(4, -100.0, 20000);
 			user_input = 2;
 			break;
 		case 2:
-			setMotor(1, -25.0);
-			setMotor(2, -25.0);
-			setMotor(3, 25.0);
-			setMotor(4, 25.0);
+			setMotor(1, -25.0, 20000);
+			setMotor(2, -25.0, 20000);
+			setMotor(3, 25.0, 20000);
+			setMotor(4, 25.0, 20000);
 			user_input = 3;
 			break;
 		case 3:
-			setMotor(1, -100.0);
-			setMotor(2, -100.0);
-			setMotor(3, 100.0);
-			setMotor(4, 100.0);
+			setMotor(1, -100.0, 20000);
+			setMotor(2, -100.0, 20000);
+			setMotor(3, 100.0, 20000);
+			setMotor(4, 100.0, 20000);
 			user_input = 4;
 			break;
 		case 4:
-			setMotor(1, 0.0);
-			setMotor(2, 0.0);
-			setMotor(3, 0.0);
-			setMotor(4, 0.0);
+			setMotor(1, 0.0, 20000);
+			setMotor(2, 0.0, 20000);
+			setMotor(3, 0.0, 20000);
+			setMotor(4, 0.0, 20000);
 			user_input = 0;
 			break;
 		}
@@ -350,7 +383,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM6) {
 		ms_count++;
-		oneKilohertz();
 	}
 }
 
@@ -517,16 +549,17 @@ void RGB_Rainbow(uint8_t dobreathing) {
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-	/* USER CODE BEGIN Error_Handler_Debug */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1) {
 	}
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
