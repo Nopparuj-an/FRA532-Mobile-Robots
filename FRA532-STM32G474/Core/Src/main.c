@@ -30,6 +30,7 @@
 #include "math.h"
 #include "arm_math.h"
 #include "motors.h"
+#include "encoder.h"
 
 /* USER CODE END Includes */
 
@@ -40,16 +41,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-#define M1_duty_offset 31
-#define M2_duty_offset 31
-#define M3_duty_offset 32
-#define M4_duty_offset 31
-
-#define M1_duty_max 1014.0
-#define M2_duty_max 1009.0
-#define M3_duty_max 1048.0
-#define M4_duty_max 1019.0
 
 /* USER CODE END PD */
 
@@ -64,16 +55,6 @@
 
 int8_t user_input = 0;
 uint32_t ms_count = 0;
-
-uint16_t duty[4] = { 0 };
-uint16_t last_duty[4] = { 0 };
-
-int32_t counter[4] = { 0 };
-int32_t last_counter[4] = { 0 };
-
-float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
-
-float motor_speed[4] = { 0.0 };
 
 /* USER CODE END PV */
 
@@ -226,14 +207,7 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 void oneKilohertz() {
-	// calculate the speed of the motors
-	for (int i = 0; i < 4; i++) {
-		float raw_speed = ((float) (counter[i] - last_counter[i]) * compensation[i]) * 6.283185307;
-		motor_speed[i] = 0.2 * raw_speed + 0.8 * motor_speed[i];
-	}
-
-	// save last counter values
-	memcpy(last_counter, counter, sizeof(last_counter));
+	calculateMotorSpeed();
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -290,72 +264,7 @@ uint64_t micros() {
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-	static uint8_t first_run = 0;
-
-	if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-		// Read the IC value
-		uint32_t ICValue = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-
-		if (ICValue != 0) {
-			// calculate the Duty Cycle
-			uint32_t Duty = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
-			// Frequency = 72000000 / ICValue;
-
-			if (htim->Instance == TIM1) {
-				duty[0] = Duty - M1_duty_offset;
-				int32_t delta = duty[0] - last_duty[0];
-				if (delta > 500) {
-					counter[0] -= delta - M1_duty_max;
-				} else if (delta < -500) {
-					counter[0] -= delta + M1_duty_max;
-				} else {
-					counter[0] -= delta;
-				}
-				last_duty[0] = duty[0];
-			} else if (htim->Instance == TIM8) {
-				duty[1] = Duty - M2_duty_offset;
-				int32_t delta = duty[1] - last_duty[1];
-				if (delta > 500) {
-					counter[1] += delta - M2_duty_max;
-				} else if (delta < -500) {
-					counter[1] += delta + M2_duty_max;
-				} else {
-					counter[1] += delta;
-				}
-				last_duty[1] = duty[1];
-			} else if (htim->Instance == TIM15) {
-				duty[2] = Duty - M3_duty_offset;
-				int32_t delta = duty[2] - last_duty[2];
-				if (delta > 500) {
-					counter[2] -= delta - M3_duty_max;
-				} else if (delta < -500) {
-					counter[2] -= delta + M3_duty_max;
-				} else {
-					counter[2] -= delta;
-				}
-				last_duty[2] = duty[2];
-			} else if (htim->Instance == TIM20) {
-				duty[3] = Duty - M4_duty_offset;
-				int32_t delta = duty[3] - last_duty[3];
-				if (delta > 500) {
-					counter[3] += delta - M4_duty_max;
-				} else if (delta < -500) {
-					counter[3] += delta + M4_duty_max;
-				} else {
-					counter[3] += delta;
-				}
-				last_duty[3] = duty[3];
-			}
-
-			if (first_run < 127) {
-				first_run++;
-				counter[0] = 0;
-				counter[1] = 0;
-				counter[2] = 0;
-				counter[3] = 0;
-			}
-		}
-	}
+	encoderCallback(htim);
 }
 
 /* USER CODE END 4 */

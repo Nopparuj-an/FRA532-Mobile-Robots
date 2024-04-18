@@ -56,6 +56,9 @@ typedef StaticTask_t osStaticThreadDef_t;
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -233,7 +236,7 @@ void StartDefaultTask(void *argument)
 
 		// msg.data++;
 		msg.data = rmw_uros_epoch_millis();
-		rcl_publish(&publisher, &msg, NULL);
+		RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
 
 		osThreadYield();
 
