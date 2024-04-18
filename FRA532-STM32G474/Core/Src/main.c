@@ -66,7 +66,7 @@
 
 /* USER CODE BEGIN PV */
 float32_t vel1;
-float32_t volt = 12;
+float32_t volt;
 int8_t user_input = 0;
 uint32_t ms_count = 0;
 
@@ -80,11 +80,15 @@ int32_t Lcounter;
 int32_t last_counter[4] = { 0 };
 
 float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
-
+float target;
 float motor_speed[4] = { 0.0 };
 float speedP;
 char TxBuffer[40];
+float Kp = 5;
+float Ki = 20;
+float Kd = 0;
 KalmanFilter filterA;
+
 
 /* USER CODE END PV */
 
@@ -96,7 +100,7 @@ uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float p
 uint64_t micros();
 void setMotor(uint8_t ID, float dutyCycle);
 void oneKilohertz();
-
+void Controller(float target_vel);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -244,8 +248,7 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 void oneKilohertz() {
-	vel1 = SteadyStateKalmanFilter(&filterA, volt, motor_speed[0]*2*3.14);
-	setMotor(1, volt*100/12);
+	Controller(target);
 
 	if (hlpuart1.gState ==  HAL_UART_STATE_READY)
 	{
@@ -255,18 +258,35 @@ void oneKilohertz() {
 
 }
 
-//void Controller(float target_vel){
-//	double u_ffw = 0.39536 * target_vel + 1.356 * filterA.X_k[3] * 0.2;
-//	if(u_ffw > 12){
-//		u_ffw = 12;
-//	}
-//	else if(u_ffw < -12){
-//		u_ffw = -12;
-//	}
-//	double u = u_ffw;
-//	setMotor(1, u*100/12);
-//	vel1 = SteadyStateKalmanFilter(&filterA, u_ffw, motor_speed[0]*2*3.14);
-//}
+
+void Controller(float target_vel) {
+    static double u_pid = 0;
+    static double integral = 0;
+
+    double u_ffw = 0.458 * target_vel + 0.1769;
+    double e = target_vel - vel1;
+
+    double proportional = Kp * e;
+    integral += Ki * e * 0.001;
+
+    if (fabs(e) < 2.0) {
+        integral = 0;
+    }
+
+    u_pid = proportional + integral;
+
+    double u = u_ffw + u_pid;
+
+    if (u > 12) {
+        u = 12;
+    } else if (u < -12) {
+        u = -12;
+    }
+    volt = u;
+    setMotor(1, u * 100 / 12);
+    vel1 = SteadyStateKalmanFilter(&filterA, u, motor_speed[0] * 2 * 3.14);
+}
+
 void Velcalc(){
 	// calculate the speed of the motors
 	for (int i = 0; i < 4; i++) {
@@ -278,13 +298,7 @@ void Velcalc(){
 
 
 
-//void controller(uint8_t ID, double target_vel){
-//	switch (ID) {
-//	case 1:
-//		e_a = target_vel - SteadyStateKalmanFilter(&filterA, VinA, motor_speed);
-//		setMotor(1, VinA);
-//	}
-//}
+
 /**
  * @brief Sets the PWM frequency and duty cycle
  * @param htimx TIM handle

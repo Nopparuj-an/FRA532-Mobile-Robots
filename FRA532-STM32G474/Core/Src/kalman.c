@@ -108,7 +108,7 @@ float SteadyStateKalmanFilter(KalmanFilter* filter, float32_t Vin,float32_t Velo
 
 void Kalman_Start(KalmanFilter* filter){
 	filter->Q = 1.0f;
-	filter->R[0] = 500.0f;
+	filter->R[0] = 1000.0f;
 
 	float32_t a[16] = {1.0f, 9.977901324108385e-04f,-6.77400050794474e-05f, 2.24398242422861e-05f,
 	                   0.0f, 0.994454095809998f,   -0.135353186667124f, 0.0410479648606776f,
