@@ -9,6 +9,17 @@
 #define INC_CONFIG_VAR_H_
 
 #include <main.h>
+#include <arm_math.h>
+
+/* ========== BEGIN Robot ========== */
+
+#define WHEEL_RADIUS		0.049338
+#define WHEEL_R_INV			1/WHEEL_RADIUS
+#define WHEEL_DISTANCE_X	0.33
+#define WHEEL_DISTANCE_Y	0.336
+#define WHEEL_DIST_SUM		WHEEL_DISTANCE_X + WHEEL_DISTANCE_Y
+
+/* ========== END Robot ========== */
 
 /* ========== BEGIN motors.h ========== */
 
@@ -41,12 +52,18 @@ extern float motor_speed[4];
 
 /* =========== END encoder.h =========== */
 
-/* ========== BEGIN controller.h ========== */
+/* ========== BEGIN Kalman & Controller ========== */
+
+extern float32_t volt[4];
+extern float vel[4];
+extern float target_vel[4];
+
+extern uint8_t motor_ID[];
 
 extern float Kp;
 extern float Ki;
 extern float Kd;
 
-/* =========== END controller.h =========== */
+/* =========== END Kalman & Controller =========== */
 
 #endif /* INC_CONFIG_VAR_H_ */

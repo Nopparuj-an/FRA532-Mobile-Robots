@@ -27,10 +27,16 @@ float motor_speed[4] = { 0.0 };
 
 /* =========== END encoder.h =========== */
 
-/* ========== BEGIN controller.h ========== */
+/* ========== BEGIN Kalman & Controller ========== */
+
+float32_t volt[4];
+float vel[4] = {0.0};
+float target_vel[4];
+
+uint8_t motor_ID[] = {1, 2, 3 ,4};
 
 float Kp = 0.7;
 float Ki = 3;
 float Kd = 0;
 
-/* =========== END controller.h =========== */
+/* =========== END Kalman & Controller =========== */

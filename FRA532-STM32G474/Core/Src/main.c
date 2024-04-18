@@ -63,12 +63,6 @@ KalmanFilter filterB;
 KalmanFilter filterC;
 KalmanFilter filterD;
 
-float32_t volt[4];
-float vel[4] = {0.0};
-float target_vel[4];
-
-uint8_t motor_ID[] = {1, 2, 3 ,4};
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

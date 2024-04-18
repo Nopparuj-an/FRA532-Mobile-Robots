@@ -30,6 +30,8 @@
 #include "arm_math.h"
 #include "WS2812B.h"
 #include "usart.h"
+#include "motors.h"
+#include "config+var.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -272,6 +274,15 @@ void twist_callback(const void *msgin) {
 	cmd_x = msg->linear.x;
 	cmd_w = msg->angular.z;
 	cmd_y = msg->linear.y;
+
+	// Front Left
+	target_vel[0] = WHEEL_R_INV * (cmd_x - cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
+	// Front Right
+	target_vel[1] = WHEEL_R_INV * (cmd_x + cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
+	// Rear Left
+	target_vel[2] = WHEEL_R_INV * (cmd_x + cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
+	// Rear Right
+	target_vel[3] = WHEEL_R_INV * (cmd_x - cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
 }
 
 void RGB_Rainbow(uint8_t dobreathing) {
