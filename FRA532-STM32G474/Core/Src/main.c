@@ -85,8 +85,8 @@ float target;
 float motor_speed[4] = { 0.0 };
 float speedP;
 char TxBuffer[40];
-float Kp = 2;
-float Ki = 1;
+float Kp = 0.7;
+float Ki = 3;
 float Kd = 0;
 KalmanFilter filterA;
 KalmanFilter filterB;
@@ -270,19 +270,21 @@ void oneKilohertz() {
 void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
     for (int i = 0; i < num_motors; i++) {
         static double u_pid = 0;
-        static double integral = 0;
+        static double integral[4];
 
-        double u_ffw = 0.458 * target_vel[i] + 0.1769;
-        double e = target_vel[i] - vel[i];
+        double e[4];
+        double u_ffw = 0.458 * target_vel[i];
+        e[i] = target_vel[i] - vel[i];
 
-        double proportional = Kp * e;
-        integral += Ki * e * 0.001;
+        double proportional = Kp * e[i];
+        integral[i] += Ki * e[i] * 0.001;
 
-        if (fabs(e) < 2.0) {
-            integral = 0;
+
+        if (fabs(e[i]) < 0.2) {
+            integral[i] = 0;
         }
 
-        u_pid = proportional + integral;
+        u_pid = proportional + integral[i];
 
         double u = u_ffw + u_pid;
 
@@ -325,7 +327,7 @@ void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
         }
 
         else if(motor_ID[i] == 3){
-        	vel[i] = SteadyStateKalmanFilter(&filterC, u, motor_speed[i] * 2 * 3.14);
+        	vel[i] = SteadyStateKalmanFilter(&filterC, volt[i], motor_speed[i] * 2 * 3.14);
             float ekalmanvel = fabs(motor_speed[i] - vel[i]);
             if (ekalmanvel > 0.67*volt[i]){
                 filterC.R[0] = 300 - ekalmanvel*10;
@@ -340,7 +342,7 @@ void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
         }
 
         else if(motor_ID[i] == 4){
-        	vel[i] = SteadyStateKalmanFilter(&filterD, u, motor_speed[i] * 2 * 3.14);
+        	vel[i] = SteadyStateKalmanFilter(&filterD, volt[i], motor_speed[i] * 2 * 3.14);
             float ekalmanvel = fabs(motor_speed[i] - vel[i]);
             if (ekalmanvel > 0.67*volt[i]){
                 filterD.R[0] = 300 - ekalmanvel*10;
