@@ -4,3 +4,8 @@
 [Rr]elease
 [Dd]ebug
 .launch
+
+# ROS2
+/build
+/install
+/log

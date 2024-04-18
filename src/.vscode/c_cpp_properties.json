@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/nopparuj/FRA532EXAM_WS/install/robot_localization/include/**",
+        "/home/nopparuj/FRA532EXAM_WS/install/micro_ros_agent/include/**",
+        "/home/nopparuj/FRA532EXAM_WS/install/micro_ros_msgs/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/nopparuj/STM32Workspace/FRA532-Mobile-Robots/src/amr_coco/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
