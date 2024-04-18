@@ -42,6 +42,7 @@
 #include <rmw_microros/rmw_microros.h>
 
 #include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/int64.h>
 #include <geometry_msgs/msg/twist.h>
 
 /* USER CODE END Includes */
@@ -66,6 +67,10 @@ typedef StaticTask_t osStaticThreadDef_t;
 /* USER CODE BEGIN Variables */
 
 uint32_t LEDtime = 0;
+
+float cmd_x = 0;
+float cmd_y = 0;
+float cmd_w = 0;
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -107,6 +112,8 @@ void * microros_reallocate(void * pointer, size_t size, void * state);
 void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element, void * state);
 
 void RGB_Rainbow(uint8_t dobreathing);
+
+void twist_callback(const void *msgin);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -184,6 +191,7 @@ void StartDefaultTask(void *argument)
 	}
 
 	//create init_options
+	rclc_executor_t executor;
 	rclc_support_t support;
 	rcl_allocator_t allocator;
 	allocator = rcl_get_default_allocator();
@@ -193,29 +201,40 @@ void StartDefaultTask(void *argument)
 	rcl_node_t node;
 	rclc_node_init_default(&node, "STM32_node", "", &support);
 
-	// create messages
-	std_msgs__msg__Int32 msg;
-	geometry_msgs__msg__Twist twist_msg;
+	// create timer
+	// rcl_timer_t defaultTimer;
+	// rclc_timer_init_default(&defaultTimer, &support, RCL_MS_TO_NS(1000), &timerCallback);
 
-	// create publisher/subscriber
-	rcl_publisher_t publisher;
-	rclc_publisher_init_default(&publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "STM32_status");
-	rcl_subscription_t subscriber;
-	rclc_subscription_init_default(&subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), "cmd_vel");
+	// create messages
+	std_msgs__msg__Int64 msg;
+	geometry_msgs__msg__Twist twist_msg;
 
 	// sync time
 	rmw_uros_sync_session(1000);
+
+	// create publisher/subscriber
+	rcl_publisher_t publisher;
+	rclc_publisher_init_default(&publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64), "STM32_status");
+	rcl_subscription_t subscriber;
+	rclc_subscription_init_default(&subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+			"cmd_vel");
+
+	// create executor
+	rclc_executor_init(&executor, &support.context, 1, &allocator); // DON'T FOTGET: Increase the number of handles
+	// rclc_executor_add_timer(&executor, &defaultTimer);
+	rclc_executor_add_subscription(&executor, &subscriber, &twist_msg, &twist_callback, ON_NEW_DATA);
 
 	msg.data = 0;
 
 	for (;;) {
 
-		rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
-		if (ret != RCL_RET_OK) {
-			printf("Error publishing (line %d)\n", __LINE__);
-		}
+		// spin the executor (must do to receive data)
+		rclc_executor_spin_some(&executor, 0);
 
-		msg.data++;
+		// msg.data++;
+		msg.data = rmw_uros_epoch_millis();
+		rcl_publish(&publisher, &msg, NULL);
+
 		osThreadYield();
 
 	}
@@ -244,6 +263,13 @@ void StartSecondTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+
+void twist_callback(const void *msgin) {
+	const geometry_msgs__msg__Twist *msg = (const geometry_msgs__msg__Twist*) msgin;
+	cmd_x = msg->linear.x;
+	cmd_w = msg->angular.z;
+	cmd_y = msg->linear.y;
+}
 
 void RGB_Rainbow(uint8_t dobreathing) {
 	static uint32_t startTime = 0;
