@@ -33,7 +33,7 @@
 #include "encoder.h"
 #include "string.h"
 #include "kalman.h"
-#include "config.h"
+#include "config+var.h"
 
 /* USER CODE END Includes */
 

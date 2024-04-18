@@ -5,7 +5,7 @@
  *      Author: nopparuj
  */
 
-#include "config.h"
+#include <config+var.h>
 
 /* ========== BEGIN motors.h ========== */
 

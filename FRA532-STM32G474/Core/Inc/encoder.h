@@ -9,8 +9,8 @@
 #define INC_ENCODER_H_
 
 // Includes
+#include <config+var.h>
 #include <stm32g4xx_hal.h>
-#include "config.h"
 #include "tim.h"
 #include "string.h"
 

@@ -5,8 +5,8 @@
  *      Author: nopparuj
  */
 
-#ifndef INC_CONFIG_H_
-#define INC_CONFIG_H_
+#ifndef INC_CONFIG_VAR_H_
+#define INC_CONFIG_VAR_H_
 
 #include <main.h>
 
@@ -49,4 +49,4 @@ extern float Kd;
 
 /* =========== END controller.h =========== */
 
-#endif /* INC_CONFIG_H_ */
+#endif /* INC_CONFIG_VAR_H_ */
