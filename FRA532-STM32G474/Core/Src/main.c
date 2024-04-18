@@ -52,6 +52,8 @@
 #define M3_duty_max 1048.0
 #define M4_duty_max 1019.0
 
+#define motor_freq 5000
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -266,38 +268,38 @@ void setMotor(uint8_t ID, float dutyCycle) {
 	switch (ID) {
 	case 1:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_3, motor_freq, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_4, motor_freq, dutyCycle);
 		} else {
-			PWMWrite(&htim4, TIM_CHANNEL_3, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_4, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_3, motor_freq, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_4, motor_freq, 0.0);
 		}
 		break;
 	case 2:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_3, motor_freq, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_4, motor_freq, dutyCycle);
 		} else {
-			PWMWrite(&htim3, TIM_CHANNEL_3, 20000, dutyCycle);
-			PWMWrite(&htim3, TIM_CHANNEL_4, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_3, motor_freq, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_4, motor_freq, 0.0);
 		}
 		break;
 	case 3:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_1, motor_freq, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_2, motor_freq, 0.0);
 		} else {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 20000, dutyCycle);
+			PWMWrite(&htim3, TIM_CHANNEL_1, motor_freq, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_2, motor_freq, dutyCycle);
 		}
 		break;
 	case 4:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, 0.0);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_1, motor_freq, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_2, motor_freq, dutyCycle);
 		} else {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 20000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 20000, 0.0);
+			PWMWrite(&htim4, TIM_CHANNEL_1, motor_freq, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_2, motor_freq, 0.0);
 		}
 		break;
 	default:

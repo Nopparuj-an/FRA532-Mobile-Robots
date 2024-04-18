@@ -70,7 +70,7 @@ uint32_t LEDtime = 0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
-uint32_t defaultTaskBuffer[ 5000 ];
+uint32_t defaultTaskBuffer[ 4000 ];
 osStaticThreadDef_t defaultTaskControlBlock;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
@@ -79,6 +79,18 @@ const osThreadAttr_t defaultTask_attributes = {
   .cb_mem = &defaultTaskControlBlock,
   .cb_size = sizeof(defaultTaskControlBlock),
   .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for secondTask */
+osThreadId_t secondTaskHandle;
+uint32_t secondTaskBuffer[ 1000 ];
+osStaticThreadDef_t secondTaskControlBlock;
+const osThreadAttr_t secondTask_attributes = {
+  .name = "secondTask",
+  .stack_mem = &secondTaskBuffer[0],
+  .stack_size = sizeof(secondTaskBuffer),
+  .cb_mem = &secondTaskControlBlock,
+  .cb_size = sizeof(secondTaskControlBlock),
+  .priority = (osPriority_t) osPriorityBelowNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -99,6 +111,7 @@ void RGB_Rainbow(uint8_t dobreathing);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
+void StartSecondTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -131,6 +144,9 @@ void MX_FREERTOS_Init(void) {
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of secondTask */
+  secondTaskHandle = osThreadNew(StartSecondTask, NULL, &secondTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -193,10 +209,6 @@ void StartDefaultTask(void *argument)
 	msg.data = 0;
 
 	for (;;) {
-		//osDelay(1);
-		RGB_Rainbow(0);
-		Set_Brightness(45);
-		WS2812_Send();
 
 		rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
 		if (ret != RCL_RET_OK) {
@@ -204,11 +216,30 @@ void StartDefaultTask(void *argument)
 		}
 
 		msg.data++;
-		osDelay(10);
+		osThreadYield();
 
-//		osThreadYield();
 	}
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_StartSecondTask */
+/**
+* @brief Function implementing the secondTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSecondTask */
+void StartSecondTask(void *argument)
+{
+  /* USER CODE BEGIN StartSecondTask */
+	/* Infinite loop */
+	for (;;) {
+		RGB_Rainbow(0);
+		Set_Brightness(45);
+		WS2812_Send();
+		osThreadYield();
+	}
+  /* USER CODE END StartSecondTask */
 }
 
 /* Private application code --------------------------------------------------*/
