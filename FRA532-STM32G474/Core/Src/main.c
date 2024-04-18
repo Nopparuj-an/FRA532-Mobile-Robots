@@ -56,7 +56,6 @@
 
 /* USER CODE BEGIN PV */
 
-int8_t user_input = 0;
 uint32_t ms_count = 0;
 
 KalmanFilter filterA;
@@ -322,44 +321,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			return;
 		last_time = time;
 
-		switch (user_input) {
-		default:
-		case 0:
-			setMotor(1, 25.0);
-			setMotor(2, 25.0);
-			setMotor(3, 25.0);
-			setMotor(4, 25.0);
-			user_input = 1;
-			break;
-		case 1:
-			setMotor(1, 100.0);
-			setMotor(2, 100.0);
-			setMotor(3, 100.0);
-			setMotor(4, 100.0);
-			user_input = 2;
-			break;
-		case 2:
-			setMotor(1, -25.0);
-			setMotor(2, -25.0);
-			setMotor(3, -25.0);
-			setMotor(4, -25.0);
-			user_input = 3;
-			break;
-		case 3:
-			setMotor(1, -100.0);
-			setMotor(2, -100.0);
-			setMotor(3, -100.0);
-			setMotor(4, -100.0);
-			user_input = 4;
-			break;
-		case 4:
-			setMotor(1, 0.0);
-			setMotor(2, 0.0);
-			setMotor(3, 0.0);
-			setMotor(4, 0.0);
-			user_input = 0;
-			break;
-		}
+		// debounced button
+		// insert debug code here
 	}
 }
 
