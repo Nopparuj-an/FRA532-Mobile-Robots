@@ -66,7 +66,7 @@
 
 /* USER CODE BEGIN PV */
 float32_t vel1;
-float32_t volt;
+float32_t volt[4];
 int8_t user_input = 0;
 uint32_t ms_count = 0;
 
@@ -81,14 +81,21 @@ int32_t last_counter[4] = { 0 };
 
 float compensation[4] = { 1000.0 / M1_duty_max, 1000.0 / M2_duty_max, 1000.0 / M3_duty_max, 1000.0 / M4_duty_max };
 float target;
+
 float motor_speed[4] = { 0.0 };
 float speedP;
 char TxBuffer[40];
-float Kp = 5;
-float Ki = 20;
+float Kp = 2;
+float Ki = 1;
 float Kd = 0;
 KalmanFilter filterA;
+KalmanFilter filterB;
+//KalmanFilter filterC;
+//KalmanFilter filterD;
+float vel[4] = {0.0};
 
+uint8_t motor_ID[] = {1, 2, 3 ,4};
+float target_vel[4];
 
 /* USER CODE END PV */
 
@@ -100,7 +107,9 @@ uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float p
 uint64_t micros();
 void setMotor(uint8_t ID, float dutyCycle);
 void oneKilohertz();
-void Controller(float target_vel);
+//void Controller(float target_vel);
+void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) ;
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -147,8 +156,10 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM17_Init();
   /* USER CODE BEGIN 2 */
-
-	Kalman_Start(&filterA);
+  Kalman_Start(&filterA);
+  Kalman_Start(&filterB);
+//  Kalman_Start(&filterC);
+//  Kalman_Start(&filterD);
 
 	// Start PWM outputs
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -188,8 +199,6 @@ int main(void)
 		static uint32_t timestamp = 0;
 		if(HAL_GetTick() > timestamp){
 		  timestamp = HAL_GetTick() + 2;
-		  speedP = (float) (counter[0] - Lcounter) * compensation[0] * 0.5;
-		  Lcounter = counter[0];
 		}
 
     /* USER CODE END WHILE */
@@ -248,49 +257,150 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 void oneKilohertz() {
-	Controller(target);
-
+//	Controller(1, target);
+	Controller(motor_ID, target_vel, 4);
 	if (hlpuart1.gState ==  HAL_UART_STATE_READY)
 	{
-		sprintf(TxBuffer,"%.2f %.2f %.2f\r\n",motor_speed[0]*2*3.14, vel1, speedP*2*3.14);
+		sprintf(TxBuffer,"%.2f %.2f\r\n",motor_speed[0]*2*3.14, vel[0]);
 		HAL_UART_Transmit_DMA(&hlpuart1, (uint8_t *)TxBuffer, strlen(TxBuffer));
 	}
 
 }
 
+void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
+    for (int i = 0; i < num_motors; i++) {
+        static double u_pid = 0;
+        static double integral = 0;
 
-void Controller(float target_vel) {
-    static double u_pid = 0;
-    static double integral = 0;
+        double u_ffw = 0.458 * target_vel[i] + 0.1769;
+        double e = target_vel[i] - vel[i];
 
-    double u_ffw = 0.458 * target_vel + 0.1769;
-    double e = target_vel - vel1;
+        double proportional = Kp * e;
+        integral += Ki * e * 0.001;
 
-    double proportional = Kp * e;
-    integral += Ki * e * 0.001;
+        if (fabs(e) < 2.0) {
+            integral = 0;
+        }
 
-    if (fabs(e) < 2.0) {
-        integral = 0;
+        u_pid = proportional + integral;
+
+        double u = u_ffw + u_pid;
+
+        if (u > 12) {
+            u = 12;
+        } else if (u < -12) {
+            u = -12;
+        }
+        volt[i] = u;
+        setMotor(motor_ID[i], u * 100 / 12);
+
+        if (motor_ID[i] == 1){
+        	vel[i] = SteadyStateKalmanFilter(&filterA, volt[i], motor_speed[i] * 2 * 3.14);
+            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+            if (ekalmanvel > 0.67*volt[i]){
+                filterA.R[0] = 300 - ekalmanvel*10;
+            }
+            else{
+                filterA.R[0] = 300 - ekalmanvel*1000;
+            }
+
+            if (filterA.R[0] < 0){
+                filterA.R[0] = 0.001;
+            }
+        }
+
+        else if(motor_ID[i] == 2){
+        	vel[i] = SteadyStateKalmanFilter(&filterB, volt[i], motor_speed[i] * 2 * 3.14);
+            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+            if (ekalmanvel > 0.67*volt[i]){
+                filterB.R[0] = 300 - ekalmanvel*10;
+            }
+            else{
+                filterB.R[0] = 300 - ekalmanvel*1000;
+            }
+
+            if (filterB.R[0] < 0){
+                filterB.R[0] = 0.001;
+            }
+        }
+//
+//        else if(motor_ID[i] == 3){
+//        	vel[i] = SteadyStateKalmanFilter(&filterC, u, motor_speed[i] * 2 * 3.14);
+//            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+//            if (ekalmanvel > 0.67*volt[i]){
+//                filterC.R[0] = 300 - ekalmanvel*10;
+//            }
+//            else{
+//                filterC.R[0] = 300 - ekalmanvel*1000;
+//            }
+//
+//            if (filterC.R[0] < 0){
+//                filterC.R[0] = 0.001;
+//            }
+//        }
+//
+//        else if(motor_ID[i] == 4){
+//        	vel[i] = SteadyStateKalmanFilter(&filterD, u, motor_speed[i] * 2 * 3.14);
+//            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+//            if (ekalmanvel > 0.67*volt[i]){
+//                filterD.R[0] = 300 - ekalmanvel*10;
+//            }
+//            else{
+//                filterD.R[0] = 300 - ekalmanvel*1000;
+//            }
+//
+//            if (filterD.R[0] < 0){
+//                filterD.R[0] = 0.001;
+//            }
+//        }
     }
-
-    u_pid = proportional + integral;
-
-    double u = u_ffw + u_pid;
-
-    if (u > 12) {
-        u = 12;
-    } else if (u < -12) {
-        u = -12;
-    }
-    volt = u;
-    setMotor(1, u * 100 / 12);
-    vel1 = SteadyStateKalmanFilter(&filterA, u, motor_speed[0] * 2 * 3.14);
 }
+
+//void Controller(uint8_t ID, float target_vel) {
+//    static double u_pid = 0;
+//    static double integral = 0;
+//
+//    double u_ffw = 0.458 * target_vel + 0.1769;
+//    double e = target_vel - vel1;
+//
+//    double proportional = Kp * e;
+//    integral += Ki * e * 0.001;
+//
+//    if (fabs(e) < 2.0) {
+//        integral = 0;
+//    }
+//
+//    u_pid = proportional + integral;
+//
+//    double u = u_ffw + u_pid;
+//
+//    if (u > 12) {
+//        u = 12;
+//    } else if (u < -12) {
+//        u = -12;
+//    }
+//    volt = u;
+//    setMotor(1, u * 100 / 12);
+//    vel1 = SteadyStateKalmanFilter(&filterA, u, motor_speed[0] * 2 * 3.14);
+//
+//    float ekalmanvel = fabs(motor_speed[0] - vel1);
+//    if (ekalmanvel > 0.67*volt){
+//    	filterA.R[0] = 300 - ekalmanvel*10;
+//    }
+//    else{
+//    	filterA.R[0] = 300 - ekalmanvel*1000;
+//    }
+//
+//    if (filterA.R[0] < 0){
+//    	filterA.R[0] = 0.001;
+//    }
+//
+//}
 
 void Velcalc(){
 	// calculate the speed of the motors
 	for (int i = 0; i < 4; i++) {
-		motor_speed[i] = (float) (counter[i] - last_counter[i]) * compensation[i] * 0.5;
+		motor_speed[i] = (float) (counter[i] - last_counter[i]) * compensation[i] * 0.1;
 	}
 	// save last counter values
 	memcpy(last_counter, counter, sizeof(last_counter));
@@ -396,11 +506,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 				duty[0] = Duty - M1_duty_offset;
 				int32_t delta = duty[0] - last_duty[0];
 				if (delta > 500) {
-					counter[0] += delta - M1_duty_max;
+					counter[0] -= delta - M1_duty_max;
 				} else if (delta < -500) {
-					counter[0] += delta + M1_duty_max;
+					counter[0] -= delta + M1_duty_max;
 				} else {
-					counter[0] += delta;
+					counter[0] -= delta;
 				}
 				last_duty[0] = duty[0];
 			} else if (htim->Instance == TIM8) {
