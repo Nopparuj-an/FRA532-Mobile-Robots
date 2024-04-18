@@ -10,8 +10,7 @@
 void calculateMotorSpeed() {
 	// calculate the speed of the motors
 	for (int i = 0; i < 4; i++) {
-		float raw_speed = ((float) (counter[i] - last_counter[i]) * compensation[i]) * 6.283185307;
-		motor_speed[i] = 0.2 * raw_speed + 0.8 * motor_speed[i];
+		motor_speed[i] = (float) (counter[i] - last_counter[i]) * compensation[i] * 0.1;
 	}
 
 	// save last counter values

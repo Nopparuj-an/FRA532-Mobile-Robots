@@ -29,8 +29,8 @@ float motor_speed[4] = { 0.0 };
 
 /* ========== BEGIN controller.h ========== */
 
-float Kp = 5;
-float Ki = 20;
+float Kp = 0.7;
+float Ki = 3;
 float Kd = 0;
 
 /* =========== END controller.h =========== */

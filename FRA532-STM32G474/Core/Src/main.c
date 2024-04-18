@@ -31,6 +31,9 @@
 #include "arm_math.h"
 #include "motors.h"
 #include "encoder.h"
+#include "string.h"
+#include "kalman.h"
+#include "config.h"
 
 /* USER CODE END Includes */
 
@@ -56,6 +59,17 @@
 int8_t user_input = 0;
 uint32_t ms_count = 0;
 
+KalmanFilter filterA;
+KalmanFilter filterB;
+KalmanFilter filterC;
+KalmanFilter filterD;
+
+float32_t volt[4];
+float vel[4] = {0.0};
+float target_vel[4];
+
+uint8_t motor_ID[] = {1, 2, 3 ,4};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,7 +78,7 @@ void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 uint64_t micros();
-void oneKilohertz();
+void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) ;
 
 /* USER CODE END PFP */
 
@@ -111,7 +125,14 @@ int main(void)
   MX_TIM8_Init();
   MX_TIM16_Init();
   MX_TIM1_Init();
+  MX_TIM17_Init();
   /* USER CODE BEGIN 2 */
+
+	// Initialize Kalman filters
+	Kalman_Start(&filterA);
+	Kalman_Start(&filterB);
+	Kalman_Start(&filterC);
+	Kalman_Start(&filterD);
 
 	// Start PWM outputs
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -134,7 +155,8 @@ int main(void)
 	HAL_TIM_IC_Start(&htim20, TIM_CHANNEL_2);
 
 	// Start timer for other functions
-	HAL_TIM_Base_Start_IT(&htim6);  // microsecond timer
+	HAL_TIM_Base_Start_IT(&htim6);  // microsecond timer, 1 kHz
+	HAL_TIM_Base_Start_IT(&htim17); // Calculate speed timer, 100 Hz
 
   /* USER CODE END 2 */
 
@@ -206,8 +228,90 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void oneKilohertz() {
-	calculateMotorSpeed();
+void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
+	for (int i = 0; i < num_motors; i++) {
+		static double u_pid = 0;
+		static double integral[4];
+
+		double e[4];
+		double u_ffw = 0.458 * target_vel[i];
+		e[i] = target_vel[i] - vel[i];
+
+		double proportional = Kp * e[i];
+		integral[i] += Ki * e[i] * 0.001;
+
+		if (fabs(e[i]) < 0.2) {
+			integral[i] = 0;
+		}
+
+		u_pid = proportional + integral[i];
+
+		double u = u_ffw + u_pid;
+
+		if (u > 12) {
+			u = 12;
+		} else if (u < -12) {
+			u = -12;
+		}
+		volt[i] = u;
+		setMotor(motor_ID[i], u * 100 / 12);
+
+		if (motor_ID[i] == 1) {
+			vel[i] = SteadyStateKalmanFilter(&filterA, volt[i], motor_speed[i] * 2 * 3.14);
+			float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+			if (ekalmanvel > 0.67 * volt[i]) {
+				filterA.R[0] = 300 - ekalmanvel * 10;
+			} else {
+				filterA.R[0] = 300 - ekalmanvel * 1000;
+			}
+
+			if (filterA.R[0] < 0) {
+				filterA.R[0] = 0.001;
+			}
+		}
+
+		else if (motor_ID[i] == 2) {
+			vel[i] = SteadyStateKalmanFilter(&filterB, volt[i], motor_speed[i] * 2 * 3.14);
+			float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+			if (ekalmanvel > 0.67 * volt[i]) {
+				filterB.R[0] = 300 - ekalmanvel * 10;
+			} else {
+				filterB.R[0] = 300 - ekalmanvel * 1000;
+			}
+
+			if (filterB.R[0] < 0) {
+				filterB.R[0] = 0.001;
+			}
+		}
+
+		else if (motor_ID[i] == 3) {
+			vel[i] = SteadyStateKalmanFilter(&filterC, volt[i], motor_speed[i] * 2 * 3.14);
+			float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+			if (ekalmanvel > 0.67 * volt[i]) {
+				filterC.R[0] = 300 - ekalmanvel * 10;
+			} else {
+				filterC.R[0] = 300 - ekalmanvel * 1000;
+			}
+
+			if (filterC.R[0] < 0) {
+				filterC.R[0] = 0.001;
+			}
+		}
+
+		else if (motor_ID[i] == 4) {
+			vel[i] = SteadyStateKalmanFilter(&filterD, volt[i], motor_speed[i] * 2 * 3.14);
+			float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+			if (ekalmanvel > 0.67 * volt[i]) {
+				filterD.R[0] = 300 - ekalmanvel * 10;
+			} else {
+				filterD.R[0] = 300 - ekalmanvel * 1000;
+			}
+
+			if (filterD.R[0] < 0) {
+				filterD.R[0] = 0.001;
+			}
+		}
+	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -282,8 +386,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
 	if (htim->Instance == TIM6) {
+		// 1 kHz loop
 		ms_count++;
-		oneKilohertz();
+		Controller(motor_ID, target_vel, 4);
+	}
+
+	if (htim->Instance == TIM17) {
+		calculateMotorSpeed();
 	}
 
   /* USER CODE END Callback 0 */

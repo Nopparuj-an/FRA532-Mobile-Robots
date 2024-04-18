@@ -13,7 +13,7 @@
 /* ========== BEGIN motors.h ========== */
 
 #define CPU_FREQ 170.0 * 1.0e6
-#define motor_freq 5000
+#define motor_freq 2000
 
 /* =========== END motors.h =========== */
 

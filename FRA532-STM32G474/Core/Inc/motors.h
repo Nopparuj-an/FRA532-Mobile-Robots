@@ -14,10 +14,6 @@
 #include "math.h"
 #include "tim.h"
 
-// Defines
-#define CPU_FREQ 170.0 * 1.0e6
-#define motor_freq 5000
-
 // Function Declarations
 uint8_t PWMWrite(TIM_HandleTypeDef *htimx, uint16_t tim_chx, float freq, float percent_duty);
 void setMotor(uint8_t ID, float dutyCycle);
