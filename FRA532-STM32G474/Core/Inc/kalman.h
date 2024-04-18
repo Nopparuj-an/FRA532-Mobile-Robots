@@ -84,6 +84,7 @@ typedef struct KalmanParams{
 	arm_matrix_instance_f32 R_matrix;
 	arm_matrix_instance_f32 Z_matrix;
 	arm_matrix_instance_f32 Velocity_matrix;
+	float Kalman_Speed;
 } KalmanFilter;
 
 float SteadyStateKalmanFilter(KalmanFilter* filter,float32_t Vin, float32_t Velocity);

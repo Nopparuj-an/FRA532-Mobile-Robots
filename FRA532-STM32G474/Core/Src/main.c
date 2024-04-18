@@ -90,8 +90,8 @@ float Ki = 1;
 float Kd = 0;
 KalmanFilter filterA;
 KalmanFilter filterB;
-//KalmanFilter filterC;
-//KalmanFilter filterD;
+KalmanFilter filterC;
+KalmanFilter filterD;
 float vel[4] = {0.0};
 
 uint8_t motor_ID[] = {1, 2, 3 ,4};
@@ -158,8 +158,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   Kalman_Start(&filterA);
   Kalman_Start(&filterB);
-//  Kalman_Start(&filterC);
-//  Kalman_Start(&filterD);
+  Kalman_Start(&filterC);
+  Kalman_Start(&filterD);
 
 	// Start PWM outputs
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -323,36 +323,36 @@ void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
                 filterB.R[0] = 0.001;
             }
         }
-//
-//        else if(motor_ID[i] == 3){
-//        	vel[i] = SteadyStateKalmanFilter(&filterC, u, motor_speed[i] * 2 * 3.14);
-//            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
-//            if (ekalmanvel > 0.67*volt[i]){
-//                filterC.R[0] = 300 - ekalmanvel*10;
-//            }
-//            else{
-//                filterC.R[0] = 300 - ekalmanvel*1000;
-//            }
-//
-//            if (filterC.R[0] < 0){
-//                filterC.R[0] = 0.001;
-//            }
-//        }
-//
-//        else if(motor_ID[i] == 4){
-//        	vel[i] = SteadyStateKalmanFilter(&filterD, u, motor_speed[i] * 2 * 3.14);
-//            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
-//            if (ekalmanvel > 0.67*volt[i]){
-//                filterD.R[0] = 300 - ekalmanvel*10;
-//            }
-//            else{
-//                filterD.R[0] = 300 - ekalmanvel*1000;
-//            }
-//
-//            if (filterD.R[0] < 0){
-//                filterD.R[0] = 0.001;
-//            }
-//        }
+
+        else if(motor_ID[i] == 3){
+        	vel[i] = SteadyStateKalmanFilter(&filterC, u, motor_speed[i] * 2 * 3.14);
+            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+            if (ekalmanvel > 0.67*volt[i]){
+                filterC.R[0] = 300 - ekalmanvel*10;
+            }
+            else{
+                filterC.R[0] = 300 - ekalmanvel*1000;
+            }
+
+            if (filterC.R[0] < 0){
+                filterC.R[0] = 0.001;
+            }
+        }
+
+        else if(motor_ID[i] == 4){
+        	vel[i] = SteadyStateKalmanFilter(&filterD, u, motor_speed[i] * 2 * 3.14);
+            float ekalmanvel = fabs(motor_speed[i] - vel[i]);
+            if (ekalmanvel > 0.67*volt[i]){
+                filterD.R[0] = 300 - ekalmanvel*10;
+            }
+            else{
+                filterD.R[0] = 300 - ekalmanvel*1000;
+            }
+
+            if (filterD.R[0] < 0){
+                filterD.R[0] = 0.001;
+            }
+        }
     }
 }
 
@@ -454,20 +454,20 @@ void setMotor(uint8_t ID, float dutyCycle) {
 		break;
 	case 3:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim3, TIM_CHANNEL_1, 2000, 0.0);
-			PWMWrite(&htim3, TIM_CHANNEL_2, 2000, dutyCycle);
-		} else {
 			PWMWrite(&htim3, TIM_CHANNEL_1, 2000, dutyCycle);
 			PWMWrite(&htim3, TIM_CHANNEL_2, 2000, 0.0);
+		} else {
+			PWMWrite(&htim3, TIM_CHANNEL_1, 2000, 0.0);
+			PWMWrite(&htim3, TIM_CHANNEL_2, 2000, dutyCycle);
 		}
 		break;
 	case 4:
 		if (dutyCycle < 0) {
-			PWMWrite(&htim4, TIM_CHANNEL_1, 2000, dutyCycle);
-			PWMWrite(&htim4, TIM_CHANNEL_2, 2000, 0.0);
-		} else {
 			PWMWrite(&htim4, TIM_CHANNEL_1, 2000, 0.0);
 			PWMWrite(&htim4, TIM_CHANNEL_2, 2000, dutyCycle);
+		} else {
+			PWMWrite(&htim4, TIM_CHANNEL_1, 2000, dutyCycle);
+			PWMWrite(&htim4, TIM_CHANNEL_2, 2000, 0.0);
 		}
 		break;
 	default:

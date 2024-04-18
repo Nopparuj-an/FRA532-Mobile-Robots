@@ -100,8 +100,8 @@ float SteadyStateKalmanFilter(KalmanFilter* filter, float32_t Vin,float32_t Velo
 	  arm_mat_mult_f32(&filter->K_matrix, &filter->C_matrix, &temp_matrix4);				// K * C
 	  arm_mat_sub_f32(&filter->eye_matrix, &temp_matrix4, &temp_matrix4);			// (I - (K * C))
 	  arm_mat_mult_f32(&temp_matrix4, &filter->P_k_matrix, &filter->P_k_matrix);			// (I - (K * C)) * P_k
-	  Kalman_Speed = filter->X_k[1];
-	  return  Kalman_Speed;
+	  filter->Kalman_Speed = filter->X_k[1];
+	  return  filter->Kalman_Speed;
 }
 
 void Kalman_Start(KalmanFilter* filter){
