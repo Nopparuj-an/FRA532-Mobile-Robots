@@ -950,4 +950,11 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 
 /* USER CODE BEGIN 1 */
 
+// quick and dirty way to stop warning
+#include <sys/time.h>
+int _gettimeofday( struct timeval *tv, void *tzvp )
+{
+    return 0;
+}
+
 /* USER CODE END 1 */
