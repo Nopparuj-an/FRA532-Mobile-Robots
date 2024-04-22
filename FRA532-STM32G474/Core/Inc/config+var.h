@@ -10,6 +10,7 @@
 
 #include <main.h>
 #include <arm_math.h>
+#include "kalman.h"
 
 /* ========== BEGIN Robot ========== */
 
@@ -67,6 +68,11 @@ extern uint8_t motor_ID[];
 extern float Kp;
 extern float Ki;
 extern float Kd;
+
+extern KalmanFilter filterA;
+extern KalmanFilter filterB;
+extern KalmanFilter filterC;
+extern KalmanFilter filterD;
 
 /* =========== END Kalman & Controller =========== */
 

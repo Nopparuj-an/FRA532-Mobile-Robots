@@ -36,9 +36,9 @@
 #include <stdbool.h>
 
 #include <rcl/rcl.h>
-#include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
+#include <rcl/error_handling.h>
 #include <uxr/client/transport.h>
 #include <rmw_microxrcedds_c/config.h>
 #include <rmw_microros/rmw_microros.h>
@@ -46,6 +46,7 @@
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/int64.h>
 #include <geometry_msgs/msg/twist.h>
+#include <std_msgs/msg/float32_multi_array.h>
 
 /* USER CODE END Includes */
 
@@ -118,7 +119,7 @@ void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element,
 
 void RGB_Rainbow(uint8_t dobreathing);
 
-void twist_callback(const void *msgin);
+void cmd_vel_callback(const void *msgin);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -212,22 +213,24 @@ void StartDefaultTask(void *argument)
 
 	// create messages
 	std_msgs__msg__Int64 msg;
-	geometry_msgs__msg__Twist twist_msg;
+	geometry_msgs__msg__Twist cmd_vel_msg;
+	std_msgs__msg__Float32MultiArray wheel_speeds_msg;
 
 	// sync time
 	rmw_uros_sync_session(1000);
 
 	// create publisher/subscriber
-	rcl_publisher_t publisher;
-	rclc_publisher_init_default(&publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64), "STM32_status");
-	rcl_subscription_t subscriber;
-	rclc_subscription_init_default(&subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-			"cmd_vel");
+	rcl_publisher_t status_publisher;
+	rclc_publisher_init_default(&status_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64), "STM32_status");
+	rcl_subscription_t cmd_vel_subscriber;
+	rclc_subscription_init_default(&cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), "cmd_vel");
+	rcl_publisher_t wheel_speeds_publisher;
+	rclc_publisher_init_default(&wheel_speeds_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray), "wheel_speeds");
 
 	// create executor
 	rclc_executor_init(&executor, &support.context, 1, &allocator); // DON'T FOTGET: Increase the number of handles
 	// rclc_executor_add_timer(&executor, &defaultTimer);
-	rclc_executor_add_subscription(&executor, &subscriber, &twist_msg, &twist_callback, ON_NEW_DATA);
+	rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &cmd_vel_msg, &cmd_vel_callback, ON_NEW_DATA);
 
 	msg.data = 0;
 
@@ -238,7 +241,7 @@ void StartDefaultTask(void *argument)
 
 		// msg.data++;
 		msg.data = rmw_uros_epoch_millis();
-		RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
+		RCSOFTCHECK(rcl_publish(&status_publisher, &msg, NULL));
 
 		osThreadYield();
 
@@ -269,7 +272,7 @@ void StartSecondTask(void *argument)
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
-void twist_callback(const void *msgin) {
+void cmd_vel_callback(const void *msgin) {
 	const geometry_msgs__msg__Twist *msg = (const geometry_msgs__msg__Twist*) msgin;
 	cmd_x = msg->linear.x;
 	cmd_w = msg->angular.z;

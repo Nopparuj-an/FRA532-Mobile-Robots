@@ -29,6 +29,11 @@ float motor_speed[4] = { 0.0 };
 
 /* ========== BEGIN Kalman & Controller ========== */
 
+KalmanFilter filterA;
+KalmanFilter filterB;
+KalmanFilter filterC;
+KalmanFilter filterD;
+
 float32_t volt[4];
 float vel[4] = {0.0};
 float target_vel_ramped[4];

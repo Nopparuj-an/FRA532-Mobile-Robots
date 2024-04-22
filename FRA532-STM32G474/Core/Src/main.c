@@ -58,11 +58,6 @@
 
 uint32_t ms_count = 0;
 
-KalmanFilter filterA;
-KalmanFilter filterB;
-KalmanFilter filterC;
-KalmanFilter filterD;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
