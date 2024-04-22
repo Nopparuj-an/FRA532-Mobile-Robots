@@ -31,7 +31,8 @@ float motor_speed[4] = { 0.0 };
 
 float32_t volt[4];
 float vel[4] = {0.0};
-float target_vel[4];
+float target_vel_ramped[4];
+float target_vel_unramped[4];
 
 uint8_t motor_ID[] = {1, 2, 3 ,4};
 

@@ -276,13 +276,13 @@ void twist_callback(const void *msgin) {
 	cmd_y = msg->linear.y;
 
 	// Front Left
-	target_vel[0] = WHEEL_R_INV * (cmd_x - cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
+	target_vel_unramped[0] = WHEEL_R_INV * (cmd_x - cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
 	// Front Right
-	target_vel[1] = WHEEL_R_INV * (cmd_x + cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
+	target_vel_unramped[1] = WHEEL_R_INV * (cmd_x + cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
 	// Rear Left
-	target_vel[2] = WHEEL_R_INV * (cmd_x + cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
+	target_vel_unramped[2] = WHEEL_R_INV * (cmd_x + cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
 	// Rear Right
-	target_vel[3] = WHEEL_R_INV * (cmd_x - cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
+	target_vel_unramped[3] = WHEEL_R_INV * (cmd_x - cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
 }
 
 void RGB_Rainbow(uint8_t dobreathing) {

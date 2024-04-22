@@ -71,7 +71,8 @@ void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 uint64_t micros();
-void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) ;
+void Controller(uint8_t motor_ID[], float target_vel[], int num_motors);
+void speedRamp();
 
 /* USER CODE END PFP */
 
@@ -221,6 +222,28 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+void speedRamp() {
+#define RAMP_FREQ_INV 1.0/100.0
+	for (int i = 0; i < 4; i++) {
+		float diff = target_vel_unramped[i] - target_vel_ramped[i];
+		if (diff > 0) {
+			// increase speed
+			if (diff > RAMP_ACCEL * RAMP_FREQ_INV) {
+				target_vel_ramped[i] += RAMP_ACCEL * RAMP_FREQ_INV;
+			} else {
+				target_vel_ramped[i] += diff * RAMP_FREQ_INV;
+			}
+		} else if (diff < 0) {
+			// decrease speed
+			if (diff < -RAMP_ACCEL * RAMP_FREQ_INV) {
+				target_vel_ramped[i] -= RAMP_ACCEL * RAMP_FREQ_INV;
+			} else {
+				target_vel_ramped[i] += diff * RAMP_FREQ_INV;
+			}
+		}
+	}
+}
+
 void Controller(uint8_t motor_ID[], float target_vel[], int num_motors) {
 	for (int i = 0; i < num_motors; i++) {
 		static double u_pid = 0;
@@ -345,11 +368,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM6) {
 		// 1 kHz loop
 		ms_count++;
-		Controller(motor_ID, target_vel, 4);
+		Controller(motor_ID, target_vel_ramped, 4);
 	}
 
 	if (htim->Instance == TIM17) {
 		calculateMotorSpeed();
+		speedRamp(); // remember to set loop frequency
 	}
 
   /* USER CODE END Callback 0 */

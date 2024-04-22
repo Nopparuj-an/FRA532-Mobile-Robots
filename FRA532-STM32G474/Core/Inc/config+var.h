@@ -14,7 +14,7 @@
 /* ========== BEGIN Robot ========== */
 
 #define WHEEL_RADIUS		0.049338
-#define WHEEL_R_INV			1/WHEEL_RADIUS
+#define WHEEL_R_INV			1.0/WHEEL_RADIUS
 #define WHEEL_DISTANCE_X	0.33
 #define WHEEL_DISTANCE_Y	0.336
 #define WHEEL_DIST_SUM		WHEEL_DISTANCE_X + WHEEL_DISTANCE_Y
@@ -54,9 +54,13 @@ extern float motor_speed[4];
 
 /* ========== BEGIN Kalman & Controller ========== */
 
+// Speed ramp (rad/s^2)
+#define RAMP_ACCEL 50.0
+
 extern float32_t volt[4];
 extern float vel[4];
-extern float target_vel[4];
+extern float target_vel_ramped[4];
+extern float target_vel_unramped[4];
 
 extern uint8_t motor_ID[];
 
