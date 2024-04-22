@@ -59,7 +59,7 @@ typedef StaticTask_t osStaticThreadDef_t;
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
+//#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
 /* USER CODE END PD */
@@ -120,6 +120,7 @@ void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element,
 void RGB_Rainbow(uint8_t dobreathing);
 
 void cmd_vel_callback(const void *msgin);
+void publish_wheel_speeds();
 
 /* USER CODE END FunctionPrototypes */
 
@@ -177,6 +178,24 @@ void MX_FREERTOS_Init(void) {
   * @param  argument: Not used
   * @retval None
   */
+
+// micro-ROS objects [STEP 1]
+rclc_executor_t executor;
+rclc_support_t support;
+rcl_allocator_t allocator;
+rcl_node_t node;
+
+rcl_publisher_t status_publisher;
+std_msgs__msg__Int64 msg;
+
+rcl_subscription_t cmd_vel_subscriber;
+geometry_msgs__msg__Twist cmd_vel_msg;
+
+rcl_publisher_t wheel_speeds_publisher;
+std_msgs__msg__Float32MultiArray wheel_speeds_msg;
+
+// rcl_timer_t defaultTimer;
+
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
@@ -196,41 +215,24 @@ void StartDefaultTask(void *argument)
 		printf("Error on default allocators (line %d)\n", __LINE__);
 	}
 
-	//create init_options
-	rclc_executor_t executor;
-	rclc_support_t support;
-	rcl_allocator_t allocator;
+	// Initialize micro-ROS
 	allocator = rcl_get_default_allocator();
 	rclc_support_init(&support, 0, NULL, &allocator);
-
-	// create node
-	rcl_node_t node;
 	rclc_node_init_default(&node, "STM32_node", "", &support);
-
-	// create timer
-	// rcl_timer_t defaultTimer;
-	// rclc_timer_init_default(&defaultTimer, &support, RCL_MS_TO_NS(1000), &timerCallback);
-
-	// create messages
-	std_msgs__msg__Int64 msg;
-	geometry_msgs__msg__Twist cmd_vel_msg;
-	std_msgs__msg__Float32MultiArray wheel_speeds_msg;
 
 	// sync time
 	rmw_uros_sync_session(1000);
 
-	// create publisher/subscriber
-	rcl_publisher_t status_publisher;
+	// init publishers, subscribers and timers [STEP 2]
 	rclc_publisher_init_default(&status_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64), "STM32_status");
-	rcl_subscription_t cmd_vel_subscriber;
 	rclc_subscription_init_default(&cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), "cmd_vel");
-	rcl_publisher_t wheel_speeds_publisher;
 	rclc_publisher_init_default(&wheel_speeds_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray), "wheel_speeds");
+	// rclc_timer_init_default(&defaultTimer, &support, RCL_MS_TO_NS(1000), &timerCallback);
 
-	// create executor
+	// create executor [STEP 3]
 	rclc_executor_init(&executor, &support.context, 1, &allocator); // DON'T FOTGET: Increase the number of handles
-	// rclc_executor_add_timer(&executor, &defaultTimer);
 	rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &cmd_vel_msg, &cmd_vel_callback, ON_NEW_DATA);
+	// rclc_executor_add_timer(&executor, &defaultTimer);
 
 	msg.data = 0;
 
@@ -242,6 +244,12 @@ void StartDefaultTask(void *argument)
 		// msg.data++;
 		msg.data = rmw_uros_epoch_millis();
 		RCSOFTCHECK(rcl_publish(&status_publisher, &msg, NULL));
+
+		static uint32_t nextTime = 0;
+		if (HAL_GetTick() > nextTime) {
+			nextTime = HAL_GetTick() + 10;
+			publish_wheel_speeds();
+		}
 
 		osThreadYield();
 
@@ -286,6 +294,22 @@ void cmd_vel_callback(const void *msgin) {
 	target_vel_unramped[2] = WHEEL_R_INV * (cmd_x + cmd_y - (cmd_w * (WHEEL_DIST_SUM)));
 	// Rear Right
 	target_vel_unramped[3] = WHEEL_R_INV * (cmd_x - cmd_y + (cmd_w * (WHEEL_DIST_SUM)));
+}
+
+void publish_wheel_speeds() {
+	static bool first_run = true;
+	if (first_run) {
+		wheel_speeds_msg.data.data = (float*) malloc(4 * sizeof(float));
+		first_run = false;
+	}
+
+	wheel_speeds_msg.data.size = 4;
+	wheel_speeds_msg.data.data[0] = vel[0];
+	wheel_speeds_msg.data.data[1] = vel[1];
+	wheel_speeds_msg.data.data[2] = vel[2];
+	wheel_speeds_msg.data.data[3] = vel[3];
+
+	RCSOFTCHECK(rcl_publish(&wheel_speeds_publisher, &wheel_speeds_msg, NULL));
 }
 
 void RGB_Rainbow(uint8_t dobreathing) {
