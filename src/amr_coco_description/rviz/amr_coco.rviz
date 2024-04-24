@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1
-        - /TF1/Status1
       Splitter Ratio: 0.5
     Tree Height: 70
   - Class: rviz_common/Selection
@@ -78,6 +77,8 @@ Visualization Manager:
           Value: true
         left_rear_castor:
           Value: true
+        odom:
+          Value: true
         odom_frame:
           Value: true
         right_front_castor:
@@ -90,18 +91,19 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        base_footprint:
-          base_link:
-            imu_link:
-              {}
-            left_front_castor:
-              {}
-            left_rear_castor:
-              {}
-            right_front_castor:
-              {}
-            right_rear_castor:
-              {}
+        odom:
+          base_footprint:
+            base_link:
+              imu_link:
+                {}
+              left_front_castor:
+                {}
+              left_rear_castor:
+                {}
+              right_front_castor:
+                {}
+              right_rear_castor:
+                {}
       Update Interval: 0
       Value: true
     - Class: rviz_default_plugins/Image
@@ -135,7 +137,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: base_footprint
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:
