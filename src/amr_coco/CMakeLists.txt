@@ -29,6 +29,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
   scripts/dummy_script.py
   scripts/mqtt_teleop_mecanum.py
+  scripts/odom_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
