@@ -19,6 +19,10 @@ def generate_launch_description():
         get_package_share_directory("realsense2_camera"), "launch"
     )
 
+    rplidar_launch_file_dir = os.path.join(
+        get_package_share_directory("rplidar_ros"), "launch"
+    )
+
     visualize = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [description_launch_file_dir, "/description.launch.py"]
@@ -28,6 +32,12 @@ def generate_launch_description():
     realsense = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [realsense_launch_file_dir, "/rs_launch.py"]
+        ),
+    )
+
+    rplidar = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [rplidar_launch_file_dir, "/rplidar.launch.py"]
         ),
     )
     # localize_launch_file_dir = os.path.join(
@@ -52,7 +62,7 @@ def generate_launch_description():
     launch_description.add_action(pub_odom)
     launch_description.add_action(visualize)
     launch_description.add_action(realsense)
-    # launch_description.add_action(localize)
+    launch_description.add_action(rplidar)
 
     return launch_description
 
