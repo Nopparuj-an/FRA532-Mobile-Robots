@@ -22,7 +22,7 @@ ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 20
 
 Start core node
 ```bash
-ros2 run amr_coco mqtt_teleop_mecanum.py
+ros2 launch amr_coco amr_coco_bringup.launch.py
 ```
 
 Start mapping node
