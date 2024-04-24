@@ -5,6 +5,10 @@
 [Dd]ebug
 .launch
 
+# VSCode
+.vscode
+*.code-workspace
+
 # ROS2
 /build
 /install
