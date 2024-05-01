@@ -1,101 +1,57 @@
-# Copyright (c) 2021 Juan Miguel Jimeno
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http:#www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.conditions import IfCondition
-from launch_ros.substitutions import FindPackageShare
+from launch.actions import DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription
 from launch_ros.actions import Node
-from launch.conditions import IfCondition, UnlessCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
-
-MAP_NAME='F5M' #change to the name of your own map here
 
 def generate_launch_description():
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    map_dir = os.path.join(get_package_share_directory(
+        'linorobot2_navigation'), 'maps')
+    map_file = LaunchConfiguration('map', default=os.path.join(
+        map_dir, 'F5M.yaml'))
 
-    nav2_launch_path = PathJoinSubstitution(
-        [FindPackageShare('nav2_bringup'), 'launch', 'bringup_launch.py']
-    )
+    param_dir = os.path.join(get_package_share_directory(
+        'linorobot2_navigation'), 'config')
+    param_file = LaunchConfiguration(
+        'params', default=os.path.join(param_dir, 'navigation.yaml'))
 
-    print(nav2_launch_path)
-    
-    rviz_config_path = PathJoinSubstitution(
-        [FindPackageShare('linorobot2_navigation'), 'rviz', 'linorobot2_navigation.rviz']
-    )
-
-    default_map_path = PathJoinSubstitution(
-        [FindPackageShare('linorobot2_navigation'), 'maps', f'{MAP_NAME}.yaml']
-    )
-
-    nav2_config_path = PathJoinSubstitution(
-        [FindPackageShare('linorobot2_navigation'), 'config', 'navigation.yaml']
-    )
-
-    nav2_sim_config_path = PathJoinSubstitution(
-        [FindPackageShare('linorobot2_navigation'), 'config', 'navigation.yaml']
-    )
-
+    nav2_launch_file_dir = os.path.join(
+        get_package_share_directory('nav2_bringup'), 'launch')
+    rviz_config_dir = os.path.join(
+        get_package_share_directory('linorobot2_navigation'), 'rviz')
+    rviz_config_file = os.path.join(rviz_config_dir, 'linorobot2_navigation.rviz')
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            name='sim', 
-            default_value='false',
-            description='Enable use_sime_time to true'
-        ),
+            'map',
+            default_value=map_file,
+            description='Full path to map file to load'),
 
         DeclareLaunchArgument(
-            name='rviz', 
-            default_value='false',
-            description='Run rviz'
-        ),
-
-       DeclareLaunchArgument(
-            name='map', 
-            default_value=default_map_path,
-            description='Navigation map path'
-        ),
+            'params',
+            default_value=param_file,
+            description='Full path to param file to load'),
 
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(nav2_launch_path),
-            condition=UnlessCondition(LaunchConfiguration("sim")),
+            PythonLaunchDescriptionSource(
+                [nav2_launch_file_dir, '/bringup_launch.py']),
             launch_arguments={
-                'map': LaunchConfiguration("map"),
-                'use_sim_time': LaunchConfiguration("sim"),
-                'params_file': nav2_config_path
-            }.items()
-        ),
-
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(nav2_launch_path),
-            condition=IfCondition(LaunchConfiguration("sim")),
-            launch_arguments={
-                'map': LaunchConfiguration("map"),
-                'use_sim_time': LaunchConfiguration("sim"),
-                'params_file': nav2_sim_config_path
-            }.items()
+                'map': map_file,
+                'use_sim_time': use_sim_time,
+                'params_file': param_file}.items(),
         ),
 
         Node(
             package='rviz2',
             executable='rviz2',
             name='rviz2',
-            output='screen',
-            arguments=['-d', rviz_config_path],
-            condition=IfCondition(LaunchConfiguration("rviz")),
-            parameters=[{'use_sim_time': LaunchConfiguration("sim")}]
-        )
+            arguments=['-d', rviz_config_file],
+            parameters=[{'use_sim_time': use_sim_time}],
+            output='screen'),
     ])
