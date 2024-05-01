@@ -33,11 +33,11 @@ void encoderCallback(TIM_HandleTypeDef *htim) {
 				duty[0] = Duty - M1_duty_offset;
 				int32_t delta = duty[0] - last_duty[0];
 				if (delta > 500) {
-					counter[0] -= delta - M1_duty_max;
+					counter[0] += delta - M1_duty_max;
 				} else if (delta < -500) {
-					counter[0] -= delta + M1_duty_max;
+					counter[0] += delta + M1_duty_max;
 				} else {
-					counter[0] -= delta;
+					counter[0] += delta;
 				}
 				last_duty[0] = duty[0];
 			} else if (htim->Instance == TIM8) {
