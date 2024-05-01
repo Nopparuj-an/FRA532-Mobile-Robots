@@ -23,14 +23,16 @@ from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
 
 
-MAP_NAME='playground' #change to the name of your own map here
+MAP_NAME='F5M' #change to the name of your own map here
 
 def generate_launch_description():
-    
+
     nav2_launch_path = PathJoinSubstitution(
         [FindPackageShare('nav2_bringup'), 'launch', 'bringup_launch.py']
     )
 
+    print(nav2_launch_path)
+    
     rviz_config_path = PathJoinSubstitution(
         [FindPackageShare('linorobot2_navigation'), 'rviz', 'linorobot2_navigation.rviz']
     )
@@ -44,7 +46,7 @@ def generate_launch_description():
     )
 
     nav2_sim_config_path = PathJoinSubstitution(
-        [FindPackageShare('linorobot2_navigation'), 'config', 'navigation_sim.yaml']
+        [FindPackageShare('linorobot2_navigation'), 'config', 'navigation.yaml']
     )
 
 
