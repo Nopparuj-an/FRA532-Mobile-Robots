@@ -8,7 +8,7 @@ This project is a part of the course FRA532 Mobile Robots at Institute of Field 
 - Nopparuj Ananvoranich
 - Paweekorn Buasakorn
 
-### Usage
+## Usage: ROS2
 
 Start MQTT teleoperation node
 ```bash
@@ -33,6 +33,11 @@ ros2 launch amr_coco_navigation manual_mapping.launch.py
 Save map
 ```bash
 ros2 launch amr_coco_navigation save_map.launch.py
+```
+
+Start navigation system
+```bash
+ros2 launch linorobot2_navigation navigation.launch.py
 ```
 
 ## Installation: ROS2 Humble on PC
@@ -91,3 +96,55 @@ ros2 launch amr_coco_navigation save_map.launch.py
    cd /amr-coco-ws/FRA532-Mobile-Robots
    colcon build
    ```
+
+## Usage: Docker
+
+- Start compose and attach logs
+    
+    ```bash
+    docker-compose up
+    ```
+
+> [!TIP]
+> Press `ctrl + c` is equivalent to `docker-compose stop`
+
+- Start compose and leave terminal free
+    
+    ```bash
+    docker-compose up -d
+    ```
+
+> [!TIP]
+> You can use this command even while the docker compose is already running
+
+> [!WARNING]
+> If you made any changes to the docker compose file, the existing containers will be deleted and a new one will take place.
+
+- Stop compose and keep the containers
+
+    ```bash
+    docker-compose stop
+    ```
+
+- Start existing stopped compose
+
+    ```bash
+    docker-compose start
+    ```
+
+- Stop compose and **delete all containers**
+
+    ```bash
+    docker-compose down
+    ```
+
+- Attach terminal to a docker container
+
+    ```bash
+    # docker attach container_name
+    docker attach ros2
+    ```
+
+> [!TIP]
+> Detach without closing the container by `ctrl + p` then `ctrl + q`
+> If you cannot detach this way, you can only exit the terminal by clicking the X (close) button, otherwise the container will be shut down.
