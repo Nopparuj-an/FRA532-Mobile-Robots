@@ -7,39 +7,6 @@ This project is a part of the course FRA532 Mobile Robots at Institute of Field 
 ### Team Members
 - Nopparuj Ananvoranich
 - Paweekorn Buasakorn
-
-## Usage: ROS2
-
-Start MQTT teleoperation node
-```bash
-ros2 run amr_coco mqtt_teleop_mecanum.py
-```
-
-Start Micro-ROS node (PC only)
-```bash
-ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 2000000
-```
-
-Start core node
-```bash
-ros2 launch amr_coco amr_coco_bringup.launch.py
-```
-
-Start mapping node
-```bash
-ros2 launch amr_coco_navigation manual_mapping.launch.py
-```
-
-Save map
-```bash
-ros2 launch amr_coco_navigation save_map.launch.py
-```
-
-Start navigation system
-```bash
-ros2 launch linorobot2_navigation navigation.launch.py
-```
-
 ## Installation: ROS2 Humble on PC
 
 1. Clone the repository
@@ -85,8 +52,11 @@ ros2 launch linorobot2_navigation navigation.launch.py
    ```bash
    docker-compose up
    ```
+   Terminal should be
+   
+    ![image](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/cf68d51b-7aff-460b-a4ca-6380a8ea53c4)
 
-5. Build
+6. Build
 
    Go to http://127.0.0.1:6080/
 
@@ -96,6 +66,77 @@ ros2 launch linorobot2_navigation navigation.launch.py
    cd /amr-coco-ws/FRA532-Mobile-Robots
    colcon build
    ```
+
+## Usage: ROS2
+### Teleoperate
+step 1 Attach a terminal to ros2 container (RPI5 Only)
+```bash
+docker attach ros2
+```
+Now the terminal should be 
+
+![image](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/3077c60c-cdbe-4db1-8871-eb77c6989144)
+
+
+step 2 Get a controller on your phone
+```bash
+cd WORK_SPACE/FRA532-Mobile-Robots/mqtt_teleop
+python3 run.py
+```
+When you already get qr_code you can press `ctrl + c` 
+
+step 3 Start MQTT teleoperation node
+```bash
+ros2 run amr_coco mqtt_teleop_mecanum.py
+```
+
+step 4 Start Micro-ROS node (PC only)
+```bash
+ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 2000000
+```
+
+Now you should control a robot if not please reset a micorcontroller
+
+### Navigation
+
+### Accessing noVNC on Raspberry Pi 5 (For RPI5 Only)
+
+If you're using ROS 2 Desktop on your Raspberry Pi 5, you can access noVNC (a web-based VNC client) by following these steps:
+
+Method 1: Accessing noVNC Directly on the Raspberry Pi 5
+
+1. Open a web browser on your Raspberry Pi 5.
+2. Navigate to the following URL: http://127.0.0.1:6080/
+
+This will open the noVNC client directly on your Raspberry Pi 5.
+
+Method 2: Accessing noVNC Remotely from Another Device
+
+1. Ensure that your Raspberry Pi 5 and the remote device are connected to the same network.
+2. Open a web browser on the remote device.
+3. Navigate to the following URL: http://raspberrypi.local:6080/
+
+And now open the terminal
+
+step 5 Start core node 
+```bash
+ros2 launch amr_coco amr_coco_bringup.launch.py
+```
+
+step 6 Start mapping node 
+```bash
+ros2 launch amr_coco_navigation manual_mapping.launch.py
+```
+
+step 7 Save map
+```bash
+ros2 launch amr_coco_navigation save_map.launch.py
+```
+
+step 8 Start navigation system
+```bash
+ros2 launch linorobot2_navigation navigation.launch.py
+```
 
 ## Usage: Docker
 
