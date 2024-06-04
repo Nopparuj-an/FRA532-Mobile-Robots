@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="mqtt.min.js"></script>
+    <title>Mecanum Robot Teleoperation</title>
+</head>
+
+<body>
+    <div id="main_container">
+        <h3>Mecanum Robot Teleoperation</h3>
+        By Nopparuj Ananvoranich
+        <div id="v_joystick">
+            <div id="v_thumb"></div>
+        </div>
+        <div id="w_joystick">
+            <div id="w_thumb"></div>
+        </div>
+        <div id="slider-container">
+            <label id="linear-velocity-label" for="linear-velocity">Linear Velocity 50%</label>
+            <input type="range" min="0" max="100" value="50" step="5" class="slider" id="linear-velocity">
+            <label id="angular-velocity-label" for="angular-velocity">Angular Velocity 50%</label>
+            <input type="range" min="0" max="100" value="50" step="5" class="slider" id="angular-velocity">
+        </div>
+    </div>
+    <div id="settings_container">
+        <h3 id="settings">Settings</h3>
+        <div id="settings"><br>
+            <label for="robot_namespace">Robot Namespace</label>
+            <input type="text" id="robot_namespace"><br>
+            <label for="mqtt_url">MQTT Broker URL</label>
+            <input type="text" id="mqtt_url"><br>
+            <label for="mqtt_username">MQTT Username</label>
+            <input type="text" id="mqtt_username"><br>
+            <label for="mqtt_password">MQTT Password</label>
+            <input type="password" id="mqtt_password">
+            <br>
+            <div style="display: flex; gap: 10px;">
+                <button id="save_settings">Save Settings</button>
+                <button id="load_defaults">Use Default Settings</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    // Variables to store current velocities
+    let linearVelocityX = 0;
+    let linearVelocityY = 0;
+    let angularVelocity = 0;
+    let linearScale = 1;
+    let angularScale = 1;
+
+    // Get joystick elements
+    const v_joystick = document.getElementById('v_joystick');
+    const v_thumb = document.getElementById('v_thumb');
+    const w_joystick = document.getElementById('w_joystick');
+    const w_thumb = document.getElementById('w_thumb');
+
+    // Add event listeners for touch and mouse events
+    v_joystick.addEventListener('touchstart', handleStartV);
+    v_joystick.addEventListener('mousedown', handleStartV);
+    w_joystick.addEventListener('touchstart', handleStartW);
+    w_joystick.addEventListener('mousedown', handleStartW);
+
+    function handleStartV(e) {
+        e.preventDefault();
+        const v_joystickRect = v_joystick.getBoundingClientRect();
+
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('touchmove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
+        document.addEventListener('touchend', handleEnd);
+
+        function handleMove(e) {
+            e.preventDefault();
+            // Get current position of v_thumb
+            const currentX = e.clientX || e.touches[0].clientX;
+            const currentY = e.clientY || e.touches[0].clientY;
+
+            // Calculate x/y distance from center of v_joystick
+            const deltaX = currentX - v_joystickRect.left - v_joystickRect.width / 2;
+            const deltaY = currentY - v_joystickRect.top - v_joystickRect.height / 2;
+
+            // Calculate angle and distance from center (r, theta)
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const angle = Math.atan2(deltaY, deltaX);
+
+            // Calculate maximum distance v_thumb can move
+            const maxDistance = v_joystickRect.width / 2 - v_thumb.offsetWidth / 2;
+
+            // Calculate new position for v_thumb
+            let newX = Math.cos(angle) * Math.min(distance, maxDistance);
+            let newY = Math.sin(angle) * Math.min(distance, maxDistance);
+
+            v_thumb.style.transform = `translate(${-50 + newX * 1.25}%, ${-50 + newY * 1.25}%)`;
+
+            // Convert v_joystick position to velocity
+            linearVelocityX = newX * linearScale / maxDistance;
+            linearVelocityY = -newY * linearScale / maxDistance;
+        }
+
+        function handleEnd(e) {
+            v_thumb.style.transform = 'translate(-50%, -50%)';
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('mouseup', handleEnd);
+            document.removeEventListener('touchend', handleEnd);
+            linearVelocityX = 0;
+            linearVelocityY = 0;
+        }
+    }
+
+    function handleStartW(e) {
+        e.preventDefault();
+        const w_joystickRect = w_joystick.getBoundingClientRect();
+
+        document.addEventListener('mousemove', handleMove2);
+        document.addEventListener('touchmove', handleMove2);
+        document.addEventListener('mouseup', handleEnd2);
+        document.addEventListener('touchend', handleEnd2);
+
+        function handleMove2(e) {
+            e.preventDefault();
+            // Get current position of w_thumb
+            const currentX = e.clientX || e.touches[0].clientX;
+
+            // Calculate x distance from center of w_joystick
+            const deltaX = currentX - w_joystickRect.left - w_joystickRect.width / 2;
+
+            // Calculate maximum distance w_thumb can move
+            const maxDistance = w_joystickRect.width / 2 - w_thumb.offsetWidth / 2;
+
+            // Calculate new position for w_thumb
+            let newX = Math.min(Math.max(deltaX, -maxDistance), maxDistance);
+
+            w_thumb.style.transform = `translate(${-50 + newX * 2}%, -50%)`;
+
+            // Convert w_joystick position to velocity
+            angularVelocity = newX * angularScale / maxDistance;
+        }
+
+        function handleEnd2(e) {
+            w_thumb.style.transform = 'translate(-50%, -50%)';
+            document.removeEventListener('mousemove', handleMove2);
+            document.removeEventListener('touchmove', handleMove2);
+            document.removeEventListener('mouseup', handleEnd2);
+            document.removeEventListener('touchend', handleEnd2);
+            angularVelocity = 0;
+        }
+    }
+
+    // Get slider elements
+    const linearVelocitySlider = document.getElementById('linear-velocity');
+    const angularVelocitySlider = document.getElementById('angular-velocity');
+
+    // Add event listeners for sliders
+    linearVelocitySlider.addEventListener('input', () => {
+        linearScale = linearVelocitySlider.value / 100;
+        document.getElementById('linear-velocity-label').innerText = `Linear Velocity ${linearVelocitySlider.value}%`;
+    });
+
+    angularVelocitySlider.addEventListener('input', () => {
+        angularScale = angularVelocitySlider.value / 100;
+        document.getElementById('angular-velocity-label').innerText = `Angular Velocity ${angularVelocitySlider.value}%`;
+    });
+
+    // Set scale to slider value
+    linearScale = linearVelocitySlider.value / 100;
+    angularScale = angularVelocitySlider.value / 100;
+
+    // Print velocities to console
+    // setInterval(() => {
+    //     var str = `vx: ${linearVelocityX}\nvy: ${linearVelocityY}\nw: ${angularVelocity}`;
+    //     console.log(str);
+    // }, 100); // Adjust the interval as needed
+</script>
+
+<script>
+    document.getElementById('save_settings').addEventListener('click', saveSettings);
+    document.getElementById('load_defaults').addEventListener('click', saveDefaultSettings);
+    
+    // MQTT client settings
+    var namespace = 'robot1';
+    var mqtt_url = 'ws://broker.hivemq.com:8000/mqtt'
+    var mqtt_username = '';
+    var mqtt_password = '';
+    
+    loadSettings();
+    
+    const options = {
+        clientId: 'client-' + Math.random().toString(16).substr(2, 8),
+        username: mqtt_username,
+        password: mqtt_password,
+        clean: true,
+        connectTimeout: 4000,
+    }
+
+    const mqttc = mqtt.connect(mqtt_url, options);
+
+    mqttc.on('connect', () => {
+        console.log('Connected to MQTT broker');
+        mqttc.subscribe(`${namespace}/ping`, (err) => {
+            if (!err) {
+                console.log('Subscribed to ping');
+            }
+        });
+    });
+
+    mqttc.on('message', (topic, message) => {
+        // Handle ping messages for safety
+        if (topic === `${namespace}/ping`) {
+            var data = message.toString().split(' ');
+            if (data[0] === 'PING') {
+                mqttc.publish(`${namespace}/pong`, `PONG ${data[1]}`);
+            }
+        }
+    });
+
+    // Publish velocities to MQTT topic
+    setInterval(() => {
+        var str = `${Date.now()} ${linearVelocityX} ${linearVelocityY} ${angularVelocity}`;
+        mqttc.publish(`${namespace}/velocities`, str);
+    }, 100);
+
+    function loadSettings() {
+        try {
+            const savedSettings = localStorage.getItem('robotSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                document.getElementById('robot_namespace').value = settings.robot_namespace;
+                document.getElementById('mqtt_url').value = settings.mqtt_url;
+                document.getElementById('mqtt_username').value = settings.mqtt_username;
+                document.getElementById('mqtt_password').value = settings.mqtt_password;
+                namespace = settings.robot_namespace;
+                mqtt_url = settings.mqtt_url;
+                mqtt_username = settings.mqtt_username;
+                mqtt_password = settings.mqtt_password;
+            } else {
+                saveDefaultSettings();
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            saveDefaultSettings();
+        }
+    }
+
+    function saveDefaultSettings() {
+        const defaultSettings = {
+            robot_namespace: 'robot1',
+            mqtt_url: 'ws://broker.hivemq.com:8000/mqtt',
+            mqtt_username: '',
+            mqtt_password: ''
+        };
+        localStorage.setItem('robotSettings', JSON.stringify(defaultSettings));
+        loadSettings();
+        location.reload();
+    }
+
+    function saveSettings() {
+        const robot_namespace = document.getElementById('robot_namespace').value;
+        const mqtt_url = document.getElementById('mqtt_url').value;
+        const mqtt_username = document.getElementById('mqtt_username').value;
+        const mqtt_password = document.getElementById('mqtt_password').value;
+
+        const settings = {
+            robot_namespace,
+            mqtt_url,
+            mqtt_username,
+            mqtt_password
+        };
+
+        localStorage.setItem('robotSettings', JSON.stringify(settings));
+        location.reload();
+    }
+</script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+
+    #main_container {
+        margin: 20px auto;
+        text-align: center;
+        width: 100%;
+        overflow: auto;
+    }
+
+    #settings_container {
+        margin: 20px auto;
+        text-align: center;
+        width: 100%;
+        height: 80vh;
+        overflow: auto;
+    }
+
+    #settings {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #settings label,
+    #settings input {
+        display: block;
+        margin-bottom: 10px;
+        width: 80vw;
+        max-width: 300px;
+        text-align: center;
+    }
+
+    #v_joystick {
+        width: 80vw;
+        height: 80vw;
+        max-width: 300px;
+        max-height: 300px;
+        background-color: #ccc;
+        border-radius: 50%;
+        position: relative;
+        margin: 20px auto;
+    }
+
+    #v_thumb {
+        width: 22vw;
+        height: 22vw;
+        max-width: 80px;
+        max-height: 80px;
+        background-color: #333;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    #w_joystick {
+        width: 80vw;
+        height: 14vw;
+        max-width: 300px;
+        max-height: 50px;
+        background-color: #ccc;
+        border-radius: 50px;
+        position: relative;
+        margin: 20px auto;
+    }
+
+    #w_thumb {
+        width: 14vw;
+        height: 14vw;
+        max-width: 50px;
+        max-height: 50px;
+        background-color: #333;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    #slider-container {
+        margin: 50px auto;
+        width: 80%;
+        max-width: 300px;
+    }
+
+    .slider {
+        width: 100%;
+        margin: 10px 0;
+    }
+</style>
+
+</html>

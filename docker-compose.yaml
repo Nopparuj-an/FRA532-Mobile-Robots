@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  ros2:
+    image: nopparujan/amr-coco-humble-teleop
+    container_name: ros2
+    volumes:
+      - /home/pi/ros2_docker:/amr-coco-ws:rw
+    network_mode: host
+    stdin_open: true
+    tty: true
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    restart: unless-stopped
+
+  micro_ros_agent:
+    image: microros/micro-ros-agent:humble
+    container_name: micro-ros-agent
+    network_mode: host
+    command: serial --dev /dev/ttyACM0 --baudrate 2000000
+    devices:
+      - "/dev/ttyACM0:/dev/ttyACM0"
+    restart: unless-stopped
+
+  t265-humble:
+    image: nopparujan/t265-ros2-humble
+    container_name: t265-humble
+    network_mode: host
+    volumes:
+      - "/dev:/dev"
+    device_cgroup_rules:
+      - "c 81:* rmw"
+      - "c 189:* rmw"
+    command: /bin/bash -c "source /ros2_ws/install/setup.bash && ros2 launch realsense2_camera rs_launch.py"
+    restart: unless-stopped
+
+  # docker run -p 6080:80 --security-opt seccomp=unconfined --shm-size=512m tiryoh/ros2-desktop-vnc:humble
+  # Browse http://127.0.0.1:6080/
+  desktop_ros2:
+    image: nopparujan/amr-coco-humble-desktop
+    container_name: desktop_ros2
+    security_opt:
+      - seccomp=unconfined
+    shm_size: 512m
+    ipc: host
+    ports:
+      - "6080:80"
+    volumes:
+      - /home/pi/ros2_docker:/amr-coco-ws:rw
+      - "/dev:/dev"
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    restart: unless-stopped
