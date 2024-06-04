@@ -71,32 +71,38 @@ https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/47713359/f234fe5c-ac6
 
 ## Usage: ROS2
 ### Teleoperate
+
 1. Attach a terminal to ros2 container (RPI5 Only)
-```bash
-docker attach ros2
-```
-   Terminal should be
-     ![image](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/3077c60c-cdbe-4db1-8871-eb77c6989144)
+
+    ```bash
+    docker attach ros2
+    ```
+    
+    This should appear in your terminal
+    ![image](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/3077c60c-cdbe-4db1-8871-eb77c6989144)
 
     
-2. Get a controller on your phone
-```bash
-cd WORK_SPACE/FRA532-Mobile-Robots/mqtt_teleop
-python3 run.py
-```
-When you already get qr_code you can press `ctrl + c` 
+3. Get a controller on your phone
+
+    ```bash
+    cd WORK_SPACE/FRA532-Mobile-Robots/mqtt_teleop
+    python3 run.py
+    ```
+    Once the QR code appears, you can press `ctrl + c`.
 
 3. Start MQTT teleoperation node
-```bash
-ros2 run amr_coco mqtt_teleop_mecanum.py
-```
+
+    ```bash
+    ros2 run amr_coco mqtt_teleop_mecanum.py
+    ```
 
 4. Start Micro-ROS node (PC only)
-```bash
-ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 2000000
-```
 
-Now you should control a robot if not please reset a micorcontroller
+    ```bash
+    ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 2000000
+    ```
+
+    Now you should control a robot if not please reset a micorcontroller
 
 ### Navigation
 
@@ -118,24 +124,28 @@ Now you should control a robot if not please reset a micorcontroller
     3. Navigate to the following URL: http://raspberrypi.local:6080/
 
 6. Open terminal and start core node 
-```bash
-ros2 launch amr_coco amr_coco_bringup.launch.py
-```
+
+    ```bash
+    ros2 launch amr_coco amr_coco_bringup.launch.py
+    ```
 
 7. Start mapping node 
-```bash
-ros2 launch amr_coco_navigation manual_mapping.launch.py
-```
+
+    ```bash
+    ros2 launch amr_coco_navigation manual_mapping.launch.py
+    ```
 
 8. Save map
-```bash
-ros2 launch amr_coco_navigation save_map.launch.py
-```
+
+    ```bash
+    ros2 launch amr_coco_navigation save_map.launch.py
+    ```
 
 8. Start navigation system
-```bash
-ros2 launch linorobot2_navigation navigation.launch.py
-```
+
+    ```bash
+    ros2 launch linorobot2_navigation navigation.launch.py
+    ```
 
 ## Usage: Docker
 
