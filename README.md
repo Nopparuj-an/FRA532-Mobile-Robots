@@ -31,7 +31,7 @@ https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/47713359/f234fe5c-ac6
     
     ```bash
     cd ~
-    git clone https://github.com/Nopparuj-an/FRA532-Mobile-Robots.git ros2_docker
+    git clone -b rpi5 https://github.com/Nopparuj-an/FRA532-Mobile-Robots.git ros2_docker
     cd ros2_docker
     ```
 
