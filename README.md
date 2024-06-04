@@ -1,174 +1,191 @@
-# amr_coco: A Mecanum Wheeled Mobile Robot with Automatic Mapping and Navigation Capabilities
+# FRA532 Mobile Robots Project
 
-## Project Overview
+### amr_coco: A Mecanum Wheeled Mobile Robot with automatic mapping and navigation capabilities.
 
-This project is a part of the FRA532 Mobile Robots course at the Institute of Field Robotics, King Mongkut's University of Technology Thonburi. The aim is to design and implement a mobile robot equipped with a LIDAR sensor for mapping and localization, and a camera for visual-based odometry. The robot can autonomously navigate in an indoor environment, avoiding obstacles and reaching a specified goal position.
+This project is a part of the course FRA532 Mobile Robots at Institute of Field Robotics, King Mongkut's University of Technology Thonburi. The project is to design and implement a mobile robot with automatic mapping and navigation capabilities. The robot is equipped with a LIDAR sensor for mapping and localization, and a camera for visual-based odometry. The robot is able to navigate autonomously in an indoor environment, avoiding obstacles and reaching the goal position.
 
-## Team Members
+### Team Members
 - Nopparuj Ananvoranich
 - Paweekorn Buasakorn
+## Installation: ROS2 Humble on PC
 
-## Installation
-
-### ROS2 Humble on PC
-
-1. Clone the repository:
+1. Clone the repository
+    
     ```bash
     cd ~
     git clone https://github.com/Nopparuj-an/FRA532-Mobile-Robots.git
     cd FRA532-Mobile-Robots
     ```
 
-2. Build the project:
-    ```bash
-    colcon build
-    ```
+2. Build
 
-### ROS2 Humble on Raspberry Pi 5 (Raspberry Pi OS)
+   ```bash
+   colcon build
+   ```
 
-1. Clone the repository:
+## Installation: ROS2 Humble on Raspberry Pi 5 (Raspberry Pi OS)
+
+1. Clone the repository
+    
     ```bash
     cd ~
     git clone https://github.com/Nopparuj-an/FRA532-Mobile-Robots.git ros2_docker
     cd ros2_docker
     ```
 
-2. Install Docker:
+2. Install Docker
+
     ```bash
     sudo curl -sSL https://get.docker.com/ | sh
     ```
-    *Optional*: Run Docker without `sudo`: [Linux post-installation steps for Docker Engine](https://docs.docker.com/engine/install/linux-postinstall/)
+    
+    Optional (run Docker without sudo): [Linux post-installation steps for Docker Engine](https://docs.docker.com/engine/install/linux-postinstall/)
 
-3. Install Docker Compose:
+3. Install Docker compose
+
     ```bash
     sudo apt install docker-compose
     ```
 
-4. Start Docker containers:
-    ```bash
-    docker-compose up
-    ```
-    You should see a terminal output similar to this:
+4. Start Docker containers
 
-    ![Docker Compose Up](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/cf68d51b-7aff-460b-a4ca-6380a8ea53c4)
+   ```bash
+   docker-compose up
+   ```
+   Terminal should be
+   
+    ![image](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/cf68d51b-7aff-460b-a4ca-6380a8ea53c4)
 
-5. Build the project:
-    Open a browser and navigate to `http://127.0.0.1:6080/`. Then, open a terminal in the web interface and type:
-    ```bash
-    cd /amr-coco-ws/FRA532-Mobile-Robots
-    colcon build
-    ```
+6. Build
 
-## Usage
+   Go to http://127.0.0.1:6080/
 
-### Teleoperation
+   Open a terminal and type
 
-1. Attach a terminal to the ROS2 container (Raspberry Pi 5 only):
-    ```bash
-    docker attach ros2
-    ```
-    You should see a terminal similar to this:
+   ```bash
+   cd /amr-coco-ws/FRA532-Mobile-Robots
+   colcon build
+   ```
 
-    ![ROS2 Terminal](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/3077c60c-cdbe-4db1-8871-eb77c6989144)
+## Usage: ROS2
+### Teleoperate
+step 1 Attach a terminal to ros2 container (RPI5 Only)
+```bash
+docker attach ros2
+```
+Now the terminal should be 
 
-2. Get a controller on your phone:
-    ```bash
-    cd WORK_SPACE/FRA532-Mobile-Robots/mqtt_teleop
-    python3 run.py
-    ```
-    Once you see the QR code, press `Ctrl + C`.
+![image](https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/122732439/3077c60c-cdbe-4db1-8871-eb77c6989144)
 
-3. Start the MQTT teleoperation node:
-    ```bash
-    ros2 run amr_coco mqtt_teleop_mecanum.py
-    ```
 
-4. Start the Micro-ROS node (PC only):
-    ```bash
-    ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 2000000
-    ```
+step 2 Get a controller on your phone
+```bash
+cd WORK_SPACE/FRA532-Mobile-Robots/mqtt_teleop
+python3 run.py
+```
+When you already get qr_code you can press `ctrl + c` 
 
-    You should now be able to control the robot. If not, please reset the microcontroller.
+step 3 Start MQTT teleoperation node
+```bash
+ros2 run amr_coco mqtt_teleop_mecanum.py
+```
+
+step 4 Start Micro-ROS node (PC only)
+```bash
+ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 --baudrate 2000000
+```
+
+Now you should control a robot if not please reset a micorcontroller
 
 ### Navigation
 
-1. Start the core node:
-    ```bash
-    ros2 launch amr_coco amr_coco_bringup.launch.py
-    ```
-
-2. Start the mapping node:
-    ```bash
-    ros2 launch amr_coco_navigation manual_mapping.launch.py
-    ```
-
-3. Save the map:
-    ```bash
-    ros2 launch amr_coco_navigation save_map.launch.py
-    ```
-
-4. Start the navigation system:
-    ```bash
-    ros2 launch linorobot2_navigation navigation.launch.py
-    ```
-
 ### Accessing noVNC on Raspberry Pi 5 (For RPI5 Only)
 
-#### Method 1: Accessing noVNC Directly on the Raspberry Pi 5
+If you're using ROS 2 Desktop on your Raspberry Pi 5, you can access noVNC (a web-based VNC client) by following these steps:
+
+Method 1: Accessing noVNC Directly on the Raspberry Pi 5
 
 1. Open a web browser on your Raspberry Pi 5.
-2. Navigate to http://127.0.0.1:6080/
+2. Navigate to the following URL: http://127.0.0.1:6080/
 
-#### Method 2: Accessing noVNC Remotely from Another Device
+This will open the noVNC client directly on your Raspberry Pi 5.
 
-1. Ensure your Raspberry Pi 5 and the remote device are connected to the same network.
+Method 2: Accessing noVNC Remotely from Another Device
+
+1. Ensure that your Raspberry Pi 5 and the remote device are connected to the same network.
 2. Open a web browser on the remote device.
-3. Navigate to http://raspberrypi.local:6080/
+3. Navigate to the following URL: http://raspberrypi.local:6080/
 
-## Docker Commands
+And now open the terminal
 
-- Start compose and attach logs:
+step 5 Start core node 
+```bash
+ros2 launch amr_coco amr_coco_bringup.launch.py
+```
+
+step 6 Start mapping node 
+```bash
+ros2 launch amr_coco_navigation manual_mapping.launch.py
+```
+
+step 7 Save map
+```bash
+ros2 launch amr_coco_navigation save_map.launch.py
+```
+
+step 8 Start navigation system
+```bash
+ros2 launch linorobot2_navigation navigation.launch.py
+```
+
+## Usage: Docker
+
+- Start compose and attach logs
+    
     ```bash
     docker-compose up
     ```
 
-    > *Tip*: Press `Ctrl + C` to stop (equivalent to `docker-compose stop`).
+> [!TIP]
+> Press `ctrl + c` is equivalent to `docker-compose stop`
 
-- Start compose and leave the terminal free:
+- Start compose and leave terminal free
+    
     ```bash
     docker-compose up -d
     ```
 
-    > *Tip*: This command can be used even while Docker Compose is already running.
+> [!TIP]
+> You can use this command even while the docker compose is already running
 
-    > *Warning*: If you made any changes to the Docker Compose file, the existing containers will be deleted, and new ones will take their place.
+> [!WARNING]
+> If you made any changes to the docker compose file, the existing containers will be deleted and a new one will take place.
 
-- Stop compose and keep the containers:
+- Stop compose and keep the containers
+
     ```bash
     docker-compose stop
     ```
 
-- Start existing stopped compose:
+- Start existing stopped compose
+
     ```bash
     docker-compose start
     ```
 
-- Stop compose and delete all containers:
+- Stop compose and **delete all containers**
+
     ```bash
     docker-compose down
     ```
 
-- Attach a terminal to a Docker container:
+- Attach terminal to a docker container
+
     ```bash
-    docker attach container_name
-    ```
-    For example:
-    ```bash
+    # docker attach container_name
     docker attach ros2
     ```
 
-    > *Tip*: Detach without closing the container by pressing `Ctrl + P` then `Ctrl + Q`. If you cannot detach this way, you can only exit the terminal by clicking the X (close) button, otherwise, the container will be shut down.
-
----
-
-Feel free to contribute to this project by forking the repository and submitting pull requests. For any issues or questions, please open an issue in the repository.
+> [!TIP]
+> Detach without closing the container by `ctrl + p` then `ctrl + q`
+> If you cannot detach this way, you can only exit the terminal by clicking the X (close) button, otherwise the container will be shut down.
