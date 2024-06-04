@@ -117,13 +117,13 @@ This project is a part of the FRA532 Mobile Robots course at the Institute of Fi
 #### Method 1: Accessing noVNC Directly on the Raspberry Pi 5
 
 1. Open a web browser on your Raspberry Pi 5.
-2. Navigate to `http://127.0.0.1:6080/`.
+2. Navigate to http://127.0.0.1:6080/
 
 #### Method 2: Accessing noVNC Remotely from Another Device
 
 1. Ensure your Raspberry Pi 5 and the remote device are connected to the same network.
 2. Open a web browser on the remote device.
-3. Navigate to `http://raspberrypi.local:6080/`.
+3. Navigate to http://raspberrypi.local:6080/
 
 ## Docker Commands
 
