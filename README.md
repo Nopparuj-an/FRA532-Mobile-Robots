@@ -4,6 +4,8 @@
 
 This project is a part of the course FRA532 Mobile Robots at Institute of Field Robotics, King Mongkut's University of Technology Thonburi. The project is to design and implement a mobile robot with automatic mapping and navigation capabilities. The robot is equipped with a LIDAR sensor for mapping and localization, and a camera for visual-based odometry. The robot is able to navigate autonomously in an indoor environment, avoiding obstacles and reaching the goal position.
 
+https://github.com/Nopparuj-an/FRA532-Mobile-Robots/assets/47713359/f234fe5c-ac64-4c4b-a7a9-77a56a13bf22
+
 ### Team Members
 - Nopparuj Ananvoranich
 - Paweekorn Buasakorn
